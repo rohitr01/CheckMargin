@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   calculateBatchCost,
   suggestPrices,
   generateShoppingList,
   BatchInput,
   CalculationResult,
+  CHANNEL_PRESETS,
 } from '@/lib/calculator';
 import {
   Calculator,
@@ -24,226 +25,287 @@ import {
   CheckCircle2,
   Receipt,
   FileSpreadsheet,
+  Printer,
+  Save,
+  ArrowRight,
+  Truck,
+  Store,
+  DollarSign,
+  Percent,
 } from 'lucide-react';
 
-const EMPTY_MATERIAL = { name: '', packPrice: 0, packSize: 1, packUnit: 'g', qtyUsed: 0 };
+const HSN_PRESETS = [
+  { code: '3406', name: 'Candles & Tapres', defaultRate: 5 },
+  { code: '3401', name: 'Soaps & Cleansing Bars', defaultRate: 5 },
+  { code: '1905', name: 'Bakery, Cakes, Biscuits', defaultRate: 5 },
+  { code: '3304', name: 'Cosmetics, Skincare, Serums', defaultRate: 18 },
+  { code: '3926', name: 'Resin Art & Molded Plastic Decor', defaultRate: 18 },
+  { code: '6815', name: 'Jesmonite, Cement & Plaster Decor', defaultRate: 18 },
+  { code: '6204', name: 'Apparel & Handmade Garments', defaultRate: 12 },
+  { code: '9999', name: 'Other General Goods', defaultRate: 18 },
+];
 
-const SAMPLE_TEMPLATES: Record<string, { form: any; materials: any[] }> = {
-  candle: {
-    form: {
-      productName: '200g Soy Fragrance Jar Candle',
-      batchSize: 10,
-      failedUnits: 1,
-      labourMinutes: 90,
-      labourHourlyRate: 150,
-      packagingPerUnit: 25,
-      shippingPerOrder: 65,
-      overheadPerBatch: 60,
-      sellingPrice: 599,
-      platformFeePercent: 12,
-      platformFeeFixed: 15,
-      isGSTRegistered: false,
-      gstRatePercent: 18,
-      isPriceGSTInclusive: true,
-      targetUnits: 30,
-    },
-    materials: [
-      { name: 'Pure Soy Wax (Flakes)', packPrice: 850, packSize: 1000, packUnit: 'g', qtyUsed: 1800 },
-      { name: 'French Vanilla Fragrance Oil', packPrice: 1400, packSize: 100, packUnit: 'ml', qtyUsed: 120 },
-      { name: 'Braided Cotton Wicks + Tabs', packPrice: 150, packSize: 50, packUnit: 'piece', qtyUsed: 10 },
-      { name: 'Frosted Glass Amber Jars (250ml)', packPrice: 700, packSize: 20, packUnit: 'piece', qtyUsed: 10 },
-      { name: 'Metallic Foiled Brand Label', packPrice: 200, packSize: 50, packUnit: 'piece', qtyUsed: 10 },
-    ],
-  },
-  soap: {
-    form: {
-      productName: 'Cold Process Goat Milk & Honey Bar (100g)',
-      batchSize: 12,
-      failedUnits: 1,
-      labourMinutes: 75,
-      labourHourlyRate: 180,
-      packagingPerUnit: 18,
-      shippingPerOrder: 50,
-      overheadPerBatch: 40,
-      sellingPrice: 280,
-      platformFeePercent: 10,
-      platformFeeFixed: 10,
-      isGSTRegistered: false,
-      gstRatePercent: 18,
-      isPriceGSTInclusive: true,
-      targetUnits: 50,
-    },
-    materials: [
-      { name: 'Cold Pressed Virgin Coconut Oil', packPrice: 420, packSize: 1000, packUnit: 'ml', qtyUsed: 350 },
-      { name: 'Extra Virgin Olive Oil', packPrice: 900, packSize: 1000, packUnit: 'ml', qtyUsed: 400 },
-      { name: 'Sodium Hydroxide (Lye)', packPrice: 180, packSize: 500, packUnit: 'g', qtyUsed: 110 },
-      { name: 'Organic Raw Forest Honey', packPrice: 350, packSize: 250, packUnit: 'g', qtyUsed: 50 },
-      { name: 'Lavender Essential Oil', packPrice: 850, packSize: 50, packUnit: 'ml', qtyUsed: 30 },
-      { name: 'Kraft Window Soap Box', packPrice: 240, packSize: 20, packUnit: 'piece', qtyUsed: 12 },
-    ],
-  },
-  bakery: {
-    form: {
-      productName: 'Artisan Sourdough Chocolate Babka Loaf',
-      batchSize: 6,
-      failedUnits: 0,
-      labourMinutes: 120,
-      labourHourlyRate: 200,
-      packagingPerUnit: 35,
-      shippingPerOrder: 0,
-      overheadPerBatch: 120,
-      sellingPrice: 480,
-      platformFeePercent: 8,
-      platformFeeFixed: 0,
-      isGSTRegistered: false,
-      gstRatePercent: 5,
-      isPriceGSTInclusive: true,
-      targetUnits: 24,
-    },
-    materials: [
-      { name: 'Imported Bread Flour (T55)', packPrice: 550, packSize: 5000, packUnit: 'g', qtyUsed: 1200 },
-      { name: 'French Cultured Butter (82%)', packPrice: 650, packSize: 1000, packUnit: 'g', qtyUsed: 300 },
-      { name: 'Callebaut Dark Chocolate (54%)', packPrice: 1800, packSize: 1000, packUnit: 'g', qtyUsed: 450 },
-      { name: 'Organic Brown Sugar', packPrice: 160, packSize: 1000, packUnit: 'g', qtyUsed: 200 },
-      { name: 'Custom Loaf Liner & Presentation Box', packPrice: 350, packSize: 10, packUnit: 'piece', qtyUsed: 6 },
-    ],
-  },
+const INITIAL_MATERIALS = [
+  { name: 'Pure Soy Wax (Flakes)', packPrice: 850, packSize: 1000, packUnit: 'g', qtyUsed: 1800, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+  { name: 'French Vanilla Fragrance Oil', packPrice: 1400, packSize: 100, packUnit: 'ml', qtyUsed: 120, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+  { name: 'Braided Cotton Wicks + Tabs', packPrice: 150, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+  { name: 'Frosted Glass Amber Jars (250ml)', packPrice: 700, packSize: 20, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+  { name: 'Metallic Foiled Brand Label', packPrice: 200, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+];
+
+const INITIAL_FORM: BatchInput = {
+  productName: 'Handcrafted 200g Vanilla Soy Candle',
+  hsnCode: '3406',
+  materials: INITIAL_MATERIALS,
+  batchSize: 10,
+  failedUnits: 1,
+  labourMinutes: 90,
+  labourHourlyRate: 150,
+  packagingPerUnit: 25,
+  overheadPerBatch: 50,
+  sellingPrice: 599,
+  channelId: 'amazon',
+  platformFeePercent: 12,
+  platformFeeFixed: 15,
+  gstOnPlatformFeePercent: 18,
+  shippingPerOrder: 65,
+  adSpendPerUnit: 40,
+  rtoRatePercent: 8,
+  rtoLossPerReturn: 90,
+  isGSTRegistered: true,
+  claimITC: true,
+  supplyType: 'intra-state',
+  outputGSTRatePercent: 5,
+  isPriceGSTInclusive: true,
+  monthlyFixedCost: 15000,
 };
 
 export default function CalculatorPage() {
-  const [materials, setMaterials] = useState(SAMPLE_TEMPLATES.candle.materials);
-  const [form, setForm] = useState(SAMPLE_TEMPLATES.candle.form);
-  const [result, setResult] = useState<CalculationResult | null>(() => {
-    return calculateBatchCost({ ...SAMPLE_TEMPLATES.candle.form, materials: SAMPLE_TEMPLATES.candle.materials });
-  });
+  const [materials, setMaterials] = useState(INITIAL_MATERIALS);
+  const [form, setForm] = useState<BatchInput>(INITIAL_FORM);
+  const [targetUnits, setTargetUnits] = useState(30);
+  const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
 
-  function loadTemplate(key: string) {
-    const t = SAMPLE_TEMPLATES[key];
-    if (t) {
-      setForm(t.form);
-      setMaterials(t.materials);
-      setResult(calculateBatchCost({ ...t.form, materials: t.materials }));
-      setError('');
+  // Auto calculate on mount & state changes
+  useEffect(() => {
+    recalc(form, materials);
+  }, []);
+
+  function recalc(f: BatchInput, m: typeof materials) {
+    if (!f.productName.trim() || f.batchSize <= 0) return;
+    const res = calculateBatchCost({ ...f, materials: m });
+    setResult(res);
+  }
+
+  function handleChannelChange(channelId: string) {
+    const preset = CHANNEL_PRESETS.find((p) => p.id === channelId);
+    if (preset) {
+      const updated = {
+        ...form,
+        channelId,
+        platformFeePercent: preset.feePercent,
+        platformFeeFixed: preset.fixedFee,
+        shippingPerOrder: preset.shipping,
+        gstOnPlatformFeePercent: preset.gstOnFeesPercent,
+      };
+      setForm(updated);
+      recalc(updated, materials);
     }
   }
 
-  function updateMaterial(i: number, field: string, value: string | number) {
-    setMaterials((prev) =>
-      prev.map((m, idx) => (idx === i ? { ...m, [field]: value } : m))
-    );
+  function handleHSNChange(code: string) {
+    const preset = HSN_PRESETS.find((h) => h.code === code);
+    const updated = {
+      ...form,
+      hsnCode: code,
+      outputGSTRatePercent: preset ? preset.defaultRate : form.outputGSTRatePercent,
+    };
+    setForm(updated);
+    recalc(updated, materials);
+  }
+
+  function updateMaterial(i: number, field: string, value: string | number | boolean) {
+    const updated = materials.map((m, idx) => (idx === i ? { ...m, [field]: value } : m));
+    setMaterials(updated);
+    recalc(form, updated);
   }
 
   function addMaterial() {
-    setMaterials((prev) => [...prev, { ...EMPTY_MATERIAL }]);
+    const updated = [
+      ...materials,
+      { name: '', packPrice: 0, packSize: 1, packUnit: 'g', qtyUsed: 0, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ];
+    setMaterials(updated);
   }
 
   function removeMaterial(i: number) {
-    setMaterials((prev) => prev.filter((_, idx) => idx !== i));
+    const updated = materials.filter((_, idx) => idx !== i);
+    setMaterials(updated);
+    recalc(form, updated);
   }
 
-  function handleCalculate() {
-    setError('');
-    if (!form.productName.trim()) {
-      setError('Please provide a product title.');
-      return;
+  function handleSaveProduct() {
+    if (!result) return;
+    try {
+      const savedList = JSON.parse(localStorage.getItem('makermargin_products') || '[]');
+      const newEntry = {
+        id: Date.now().toString(),
+        title: form.productName,
+        category: form.hsnCode || 'General',
+        unitCost: `₹${result.totalCostPerUnit.toFixed(2)}`,
+        sellingPrice: `₹${form.sellingPrice.toFixed(2)}`,
+        margin: `${result.grossMarginPercent.toFixed(1)}%`,
+        saleableYield: `${result.saleableYield} / ${form.batchSize}`,
+        date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+      savedList.unshift(newEntry);
+      localStorage.setItem('makermargin_products', JSON.stringify(savedList));
+      setSaveMessage('✅ Product successfully saved to library!');
+      setTimeout(() => setSaveMessage(''), 4000);
+    } catch {
+      setSaveMessage('Saved in current session.');
     }
-    if (form.batchSize <= 0) {
-      setError('Batch size must be at least 1.');
-      return;
-    }
-    if (form.failedUnits >= form.batchSize) {
-      setError('Failed units cannot equal or exceed total batch size.');
-      return;
-    }
-    if (materials.some((m) => !m.name.trim() || m.packPrice <= 0 || m.packSize <= 0)) {
-      setError('Every material requires a name, pack purchase price > 0, and pack size > 0.');
-      return;
-    }
+  }
 
-    const input: BatchInput = { ...form, materials };
-    setResult(calculateBatchCost(input));
+  function handlePrint() {
+    window.print();
+  }
+
+  function handleExportCSV() {
+    if (!result) return;
+    const rows = [
+      ['CheckMargin - Product Costing Summary'],
+      ['Product Name', form.productName],
+      ['HSN Code', form.hsnCode || ''],
+      ['Batch Size', form.batchSize.toString()],
+      ['Saleable Yield', result.saleableYield.toString()],
+      ['Yield Efficiency', `${result.yieldEfficiencyPercent.toFixed(1)}%`],
+      [''],
+      ['COST COMPONENT', 'AMOUNT PER UNIT (INR)'],
+      ['Direct Materials (ex-tax or gross)', result.materialCostPerUnit.toFixed(2)],
+      ['Direct Craft Labour', result.labourCostPerUnit.toFixed(2)],
+      ['Packaging & Inserts', form.packagingPerUnit.toFixed(2)],
+      ['Batch Overhead Allocation', result.overheadPerUnit.toFixed(2)],
+      ['Total Direct Cost per Unit', result.totalDirectCostPerUnit.toFixed(2)],
+      [''],
+      ['Platform & Commission Fee', result.platformFeeRaw.toFixed(2)],
+      ['18% GST on Platform Services', result.gstOnPlatformFee.toFixed(2)],
+      ['Seller-Paid Shipping', result.shippingCostPerUnit.toFixed(2)],
+      ['CAC / Ad Spend per Unit', result.adSpendPerUnit.toFixed(2)],
+      ['RTO & Return Reserve', result.rtoAllowancePerUnit.toFixed(2)],
+      ['Total Selling & Channel Costs', result.totalSellingCostPerUnit.toFixed(2)],
+      [''],
+      ['TRUE TOTAL COST PER UNIT', result.totalCostPerUnit.toFixed(2)],
+      ['Customer Selling Price', form.sellingPrice.toFixed(2)],
+      ['Taxable Value (ex-Output GST)', result.gst.taxableValue.toFixed(2)],
+      ['Output GST Collected', result.gst.outputGSTTotal.toFixed(2)],
+      ['Eligible Input Tax Credit (ITC)', result.gst.eligibleITC.toFixed(2)],
+      ['Net GST Cash Payable to Govt', result.gst.netGSTPayable.toFixed(2)],
+      ['NET PROFIT PER UNIT', result.grossProfitPerUnit.toFixed(2)],
+      ['GROSS MARGIN %', `${result.grossMarginPercent.toFixed(2)}%`],
+      [''],
+      ['MONTHLY BREAK-EVEN'],
+      ['Monthly Fixed Costs', `INR ${result.monthlyFixedCost}`],
+      ['Break-even Volume Required', `${result.breakEvenUnitsPerMonth} units`],
+      ['Break-even Revenue Required', `INR ${result.breakEvenRevenuePerMonth.toFixed(2)}`],
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${form.productName.replace(/\s+/g, '_')}_Costing.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   const prices = result ? suggestPrices(result.totalDirectCostPerUnit) : [];
   const shoppingList = result
-    ? generateShoppingList(materials, form.targetUnits, result.saleableYield, form.batchSize)
+    ? generateShoppingList(materials, targetUnits, result.saleableYield, form.batchSize)
     : [];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-16">
-      {/* Page Title & Preset Loader */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20 print:p-0 print:max-w-none">
+      {/* Header and Quick Presets */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs print:border-none print:p-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
               <Calculator className="w-3.5 h-3.5" />
-              <span>Deterministic Batch Costing</span>
+              <span>Advanced Batch & GST Costing Engine</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Batch Cost & Margin Calculator
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Real-time unit economics for small-batch products. Omit nothing.
+              End-to-end unit economics: wholesale packs, scrap yield, platform commissions, RTO loss, and Indian GST Input/Output reconciliation.
             </p>
           </div>
 
-          {/* Quick Preset Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Load Demo:</span>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <button
-              onClick={() => loadTemplate('candle')}
-              className="text-xs font-semibold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors"
+              onClick={handleSaveProduct}
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl border border-slate-300 shadow-xs transition-colors cursor-pointer"
             >
-              🕯️ Candle
+              <Save className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Save to Library</span>
             </button>
             <button
-              onClick={() => loadTemplate('soap')}
-              className="text-xs font-semibold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl border border-slate-300 shadow-xs transition-colors cursor-pointer"
             >
-              🧼 Soap
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Export CSV</span>
             </button>
             <button
-              onClick={() => loadTemplate('bakery')}
-              className="text-xs font-semibold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              🧁 Bakery
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / PDF</span>
             </button>
           </div>
         </div>
+
+        {saveMessage && (
+          <div className="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-4 py-2 rounded-xl">
+            {saveMessage}
+          </div>
+        )}
       </div>
 
-      {/* Real-time KPI Summary Bar (Always Visible at Top when result exists) */}
+      {/* Top Real-time Executive KPI Banner */}
       {result && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Unit Cost */}
           <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-xs">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              True Cost / Unit
+              True Unit Cost
             </span>
             <div className="text-2xl sm:text-3xl font-black text-slate-900">
               ₹{result.totalCostPerUnit.toFixed(2)}
             </div>
             <span className="text-[11px] font-semibold text-slate-400 mt-1 block">
-              Direct: ₹{result.totalDirectCostPerUnit.toFixed(2)} + Fees: ₹{(result.platformFeeAmount + result.shippingCostPerUnit).toFixed(2)}
+              Direct: ₹{result.totalDirectCostPerUnit.toFixed(2)} | Selling: ₹{result.totalSellingCostPerUnit.toFixed(2)}
             </span>
           </div>
 
-          {/* Selling Price */}
           <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-xs">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Selling Price
+              Customer Price
             </span>
             <div className="text-2xl sm:text-3xl font-black text-slate-900">
               ₹{form.sellingPrice}
             </div>
             <span className="text-[11px] font-semibold text-indigo-600 mt-1 block">
-              {form.isPriceGSTInclusive ? 'GST Inclusive' : 'GST Exclusive'}
+              Taxable: ₹{result.gst.taxableValue.toFixed(2)} ({form.isPriceGSTInclusive ? 'GST Incl.' : 'GST Excl.'})
             </span>
           </div>
 
-          {/* Net Profit */}
-          <div className={`border-2 rounded-2xl p-5 shadow-xs ${result.grossProfitPerUnit >= 0 ? 'bg-emerald-50/60 border-emerald-300' : 'bg-rose-50/60 border-rose-300'}`}>
+          <div className={`border-2 rounded-2xl p-5 shadow-xs ${result.grossProfitPerUnit >= 0 ? 'bg-emerald-50/70 border-emerald-300' : 'bg-rose-50/70 border-rose-300'}`}>
             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">
               Net Profit / Unit
             </span>
@@ -251,193 +313,224 @@ export default function CalculatorPage() {
               ₹{result.grossProfitPerUnit.toFixed(2)}
             </div>
             <span className={`text-[11px] font-bold mt-1 block ${result.grossProfitPerUnit >= 0 ? 'text-emerald-800' : 'text-rose-800'}`}>
-              {result.grossProfitPerUnit >= 0 ? 'Profitable' : 'Loss-Making'}
+              Net Margin: {result.grossMarginPercent.toFixed(1)}% | Markup: {result.markupPercent.toFixed(0)}%
             </span>
           </div>
 
-          {/* Net Margin */}
-          <div className={`border-2 rounded-2xl p-5 shadow-xs ${result.grossMarginPercent >= 25 ? 'bg-indigo-50/70 border-indigo-300' : 'bg-amber-50/70 border-amber-300'}`}>
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">
-              Net Margin
+          <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-xs">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              Monthly Break-Even
             </span>
-            <div className={`text-2xl sm:text-3xl font-black ${result.grossMarginPercent >= 25 ? 'text-indigo-800' : 'text-amber-800'}`}>
-              {result.grossMarginPercent.toFixed(1)}%
+            <div className="text-2xl sm:text-3xl font-black text-slate-900">
+              {result.breakEvenUnitsPerMonth} <span className="text-base font-bold text-slate-400">units</span>
             </div>
             <span className="text-[11px] font-semibold text-slate-500 mt-1 block">
-              Markup: {result.markupPercent.toFixed(0)}% on cost
+              Covers ₹{result.monthlyFixedCost.toLocaleString('en-IN')}/mo fixed overhead
             </span>
           </div>
         </div>
       )}
 
-      {/* Main Form Sections */}
+      {/* Inputs Form */}
       <div className="space-y-6">
-        {/* Step 1: Product Name */}
+        {/* Section 1: Product & Classification */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">1</span>
-            <h2 className="font-bold text-slate-900 text-lg">Product Identity</h2>
+            <h2 className="font-bold text-slate-900 text-lg">Product Identity & Tax Category (HSN)</h2>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Product Title or Recipe Name
-            </label>
-            <input
-              type="text"
-              value={form.productName}
-              onChange={(e) => setForm((f: any) => ({ ...f, productName: e.target.value }))}
-              placeholder="e.g. 200g Lavender Soy Jar Candle"
-              className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl px-4 py-3 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs"
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Product Title
+              </label>
+              <input
+                type="text"
+                value={form.productName}
+                onChange={(e) => {
+                  const updated = { ...form, productName: e.target.value };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                placeholder="e.g. 200g Lavender Soy Jar Candle"
+                className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl px-4 py-2.5 font-bold text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                HSN Classification
+              </label>
+              <select
+                value={form.hsnCode}
+                onChange={(e) => handleHSNChange(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                {HSN_PRESETS.map((h) => (
+                  <option key={h.code} value={h.code}>
+                    HSN {h.code} - {h.name} ({h.defaultRate}%)
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Step 2: Recipe & Materials Table */}
+        {/* Section 2: Recipe Materials & Input GST */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">2</span>
-              <h2 className="font-bold text-slate-900 text-lg">Recipe Ingredients & Materials</h2>
+              <h2 className="font-bold text-slate-900 text-lg">Bill of Materials (BOM) & Input GST</h2>
             </div>
             <button
               onClick={addMaterial}
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 py-2 rounded-xl border border-indigo-200 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Material Row</span>
+              <span>Add Material Line</span>
             </button>
           </div>
 
           <p className="text-xs text-slate-500 mb-6">
-            Enter wholesale pack purchase price and size. MakerMargin calculates the exact fraction consumed per batch.
+            Enter wholesale pack purchase price and size. MakerMargin extracts the exact batch fraction and isolates the Input GST paid for tax credit (ITC) reconciliation.
           </p>
 
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
-            <div className="min-w-[680px] space-y-3">
+            <div className="min-w-[840px] space-y-3">
               <div className="grid grid-cols-12 gap-3 text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
-                <div className="col-span-4">Material / Ingredient</div>
+                <div className="col-span-3">Material / Ingredient</div>
                 <div className="col-span-2">Pack Price (₹)</div>
-                <div className="col-span-2">Pack Size</div>
-                <div className="col-span-2">Unit</div>
-                <div className="col-span-2">Used / Batch</div>
+                <div className="col-span-2">Pack Size & Unit</div>
+                <div className="col-span-2">Input GST %</div>
+                <div className="col-span-2">Qty in Batch</div>
+                <div className="col-span-1 text-right">Delete</div>
               </div>
 
-              {materials.map((m, i) => {
-                const rowCost = m.packSize > 0 ? (m.packPrice / m.packSize) * m.qtyUsed : 0;
-                return (
-                  <div
-                    key={i}
-                    className="grid grid-cols-12 gap-3 items-center bg-slate-50 border border-slate-200 rounded-xl p-3 hover:border-slate-300 transition-all"
-                  >
-                    <div className="col-span-4">
-                      <input
-                        type="text"
-                        placeholder="e.g. Soy Wax"
-                        value={m.name}
-                        onChange={(e) => updateMaterial(i, 'name', e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="800"
-                        value={m.packPrice || ''}
-                        onChange={(e) => updateMaterial(i, 'packPrice', parseFloat(e.target.value) || 0)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="1000"
-                        value={m.packSize || ''}
-                        onChange={(e) => updateMaterial(i, 'packSize', parseFloat(e.target.value) || 1)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <select
-                        value={m.packUnit}
-                        onChange={(e) => updateMaterial(i, 'packUnit', e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      >
-                        <option value="g">Grams (g)</option>
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="ml">Millilitres (ml)</option>
-                        <option value="L">Litres (L)</option>
-                        <option value="piece">Pieces (pcs)</option>
-                        <option value="metre">Metres (m)</option>
-                        <option value="pack">Pack / Box</option>
-                      </select>
-                    </div>
-                    <div className="col-span-2 flex items-center gap-2">
-                      <input
-                        type="number"
-                        placeholder="150"
-                        value={m.qtyUsed || ''}
-                        onChange={(e) => updateMaterial(i, 'qtyUsed', parseFloat(e.target.value) || 0)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      />
-                      {materials.length > 1 && (
-                        <button
-                          onClick={() => removeMaterial(i)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Remove material"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+              {materials.map((m, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-12 gap-3 items-center bg-slate-50 border border-slate-200 rounded-xl p-3 hover:border-slate-300 transition-all"
+                >
+                  <div className="col-span-3">
+                    <input
+                      type="text"
+                      placeholder="e.g. Soy Wax"
+                      value={m.name}
+                      onChange={(e) => updateMaterial(i, 'name', e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
                   </div>
-                );
-              })}
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      placeholder="800"
+                      value={m.packPrice || ''}
+                      onChange={(e) => updateMaterial(i, 'packPrice', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2 flex gap-1.5">
+                    <input
+                      type="number"
+                      placeholder="1000"
+                      value={m.packSize || ''}
+                      onChange={(e) => updateMaterial(i, 'packSize', parseFloat(e.target.value) || 1)}
+                      className="w-20 bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                    <select
+                      value={m.packUnit}
+                      onChange={(e) => updateMaterial(i, 'packUnit', e.target.value)}
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-1.5 py-2 text-xs font-bold text-slate-700"
+                    >
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                      <option value="ml">ml</option>
+                      <option value="L">L</option>
+                      <option value="piece">pcs</option>
+                      <option value="metre">m</option>
+                      <option value="pack">pack</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <select
+                      value={m.gstRatePercent ?? 18}
+                      onChange={(e) => updateMaterial(i, 'gstRatePercent', parseFloat(e.target.value))}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 text-xs font-bold text-slate-700"
+                    >
+                      <option value="0">0% (Exempt)</option>
+                      <option value="5">5% Input GST</option>
+                      <option value="12">12% Input GST</option>
+                      <option value="18">18% Input GST</option>
+                      <option value="28">28% Input GST</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      placeholder="150"
+                      value={m.qtyUsed || ''}
+                      onChange={(e) => updateMaterial(i, 'qtyUsed', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-1 text-right">
+                    {materials.length > 1 && (
+                      <button
+                        onClick={() => removeMaterial(i)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete line"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>{materials.length} material lines configured</span>
-            <span>Subtotal Material Batch Cost: <strong className="text-slate-900 font-bold">₹{materials.reduce((acc, m) => acc + (m.packSize > 0 ? (m.packPrice / m.packSize) * m.qtyUsed : 0), 0).toFixed(2)}</strong></span>
           </div>
         </div>
 
-        {/* Step 3: Production Batch & Real Yield */}
+        {/* Section 3: Batch Production & Usable Yield */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">3</span>
-            <h2 className="font-bold text-slate-900 text-lg">Batch Production & Saleable Yield</h2>
+            <h2 className="font-bold text-slate-900 text-lg">Batch Production Volume & Scrap Yield</h2>
           </div>
-          <p className="text-xs text-slate-500 mb-6">
-            If you produce 10 candles and 1 has frosting defects or crack, only 9 can be sold. All 10 must be paid for by those 9.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Batch Size (Units Made)
+                Total Batch Size (Units Made)
               </label>
               <input
                 type="number"
                 value={form.batchSize || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, batchSize: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, batchSize: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base"
               />
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Defective / Failed Units
+                Failed / Defective Scrap Units
               </label>
               <input
                 type="number"
                 value={form.failedUnits}
-                onChange={(e) => setForm((f: any) => ({ ...f, failedUnits: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-rose-700 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, failedUnits: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-rose-700 text-base"
               />
             </div>
-
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-center">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Saleable Yield</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Net Saleable Yield</span>
               <span className="text-2xl font-black text-indigo-700">
                 {Math.max(form.batchSize - form.failedUnits, 0)} units
               </span>
@@ -448,13 +541,12 @@ export default function CalculatorPage() {
           </div>
         </div>
 
-        {/* Step 4: Direct Labour, Packaging & Overhead */}
+        {/* Section 4: Direct Labour, Packaging & Studio Overhead */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">4</span>
-            <h2 className="font-bold text-slate-900 text-lg">Labour, Packaging & Overhead Allocation</h2>
+            <h2 className="font-bold text-slate-900 text-lg">Labour, Packaging & Studio Overhead</h2>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
@@ -463,25 +555,29 @@ export default function CalculatorPage() {
               <input
                 type="number"
                 value={form.labourMinutes || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, labourMinutes: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, labourMinutes: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Prep, pouring, cleanup</span>
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Labour Rate (₹ / Hour)
+                Hourly Wage (₹ / Hour)
               </label>
               <input
                 type="number"
                 value={form.labourHourlyRate || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, labourHourlyRate: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, labourHourlyRate: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Your time has monetary value</span>
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Packaging / Unit (₹)
@@ -489,12 +585,14 @@ export default function CalculatorPage() {
               <input
                 type="number"
                 value={form.packagingPerUnit || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, packagingPerUnit: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, packagingPerUnit: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Box, bubble wrap, thank you card</span>
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Overhead / Batch (₹)
@@ -502,61 +600,87 @@ export default function CalculatorPage() {
               <input
                 type="number"
                 value={form.overheadPerBatch || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, overheadPerBatch: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, overheadPerBatch: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Electricity, tool depreciation</span>
             </div>
           </div>
         </div>
 
-        {/* Step 5: Selling Channels, Shipping & Fees */}
+        {/* Section 5: Sales Channel, Commissions & RTO */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">5</span>
-            <h2 className="font-bold text-slate-900 text-lg">Target Price, Sales Channels & Taxes</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">5</span>
+              <h2 className="font-bold text-slate-900 text-lg">Sales Channel, Logistics & RTO Loss Reserve</h2>
+            </div>
+            {/* Channel Preset Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase">Preset:</span>
+              <select
+                value={form.channelId}
+                onChange={(e) => handleChannelChange(e.target.value)}
+                className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg"
+              >
+                {CHANNEL_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Target Selling Price (₹)
+                Customer Selling Price (₹)
               </label>
               <input
                 type="number"
                 value={form.sellingPrice || ''}
-                onChange={(e) => setForm((f: any) => ({ ...f, sellingPrice: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border-2 border-indigo-400 rounded-xl px-4 py-2.5 font-black text-indigo-950 text-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, sellingPrice: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border-2 border-indigo-500 rounded-xl px-4 py-2.5 font-black text-indigo-950 text-base"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Price shown to customer</span>
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Platform Fee (%)
+                Platform Fee (%) + Fixed (₹)
               </label>
-              <input
-                type="number"
-                value={form.platformFeePercent}
-                onChange={(e) => setForm((f: any) => ({ ...f, platformFeePercent: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">e.g. Amazon ~12%, Etsy ~6.5%</span>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="%"
+                  value={form.platformFeePercent}
+                  onChange={(e) => {
+                    const updated = { ...form, platformFeePercent: parseFloat(e.target.value) || 0 };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-1/2 bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                />
+                <input
+                  type="number"
+                  placeholder="₹ fixed"
+                  value={form.platformFeeFixed}
+                  onChange={(e) => {
+                    const updated = { ...form, platformFeeFixed: parseFloat(e.target.value) || 0 };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-1/2 bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1 block">+18% GST charged on platform fee</span>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Fixed Order Fee (₹)
-              </label>
-              <input
-                type="number"
-                value={form.platformFeeFixed}
-                onChange={(e) => setForm((f: any) => ({ ...f, platformFeeFixed: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">Gateway or closing fee</span>
-            </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Seller-Paid Shipping (₹)
@@ -564,159 +688,268 @@ export default function CalculatorPage() {
               <input
                 type="number"
                 value={form.shippingPerOrder}
-                onChange={(e) => setForm((f: any) => ({ ...f, shippingPerOrder: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  const updated = { ...form, shippingPerOrder: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">₹0 if buyer pays shipping</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Logistics cost if free delivery</span>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Ad Spend / CAC (₹)
+              </label>
+              <input
+                type="number"
+                value={form.adSpendPerUnit}
+                onChange={(e) => {
+                  const updated = { ...form, adSpendPerUnit: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">Meta / Google ads acquisition</span>
             </div>
           </div>
 
-          {/* GST Toggle Option */}
-          <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center gap-4 bg-slate-50 p-4 rounded-2xl">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* RTO / Returns Protection */}
+          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Expected RTO / Customer Return Rate (%)
+              </label>
               <input
-                type="checkbox"
-                checked={form.isGSTRegistered}
-                onChange={(e) => setForm((f: any) => ({ ...f, isGSTRegistered: e.target.checked }))}
-                className="w-4 h-4 text-indigo-600 rounded"
+                type="number"
+                value={form.rtoRatePercent}
+                onChange={(e) => {
+                  const updated = { ...form, rtoRatePercent: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
               />
-              <span className="text-sm font-bold text-slate-800">I am GST Registered</span>
-            </label>
-
-            {form.isGSTRegistered && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    value={form.gstRatePercent}
-                    onChange={(e) => setForm((f: any) => ({ ...f, gstRatePercent: parseFloat(e.target.value) || 0 }))}
-                    className="w-16 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold text-slate-900"
-                  />
-                  <span className="text-xs font-bold text-slate-600">% GST Rate</span>
-                </div>
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.isPriceGSTInclusive}
-                    onChange={(e) => setForm((f: any) => ({ ...f, isPriceGSTInclusive: e.target.checked }))}
-                    className="w-3.5 h-3.5 text-indigo-600 rounded"
-                  />
-                  <span>Selling price is GST-inclusive</span>
-                </label>
-              </div>
-            )}
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Indian e-com COD average: 8%–15%</span>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Average Loss per RTO / Damaged Return (₹)
+              </label>
+              <input
+                type="number"
+                value={form.rtoLossPerReturn}
+                onChange={(e) => {
+                  const updated = { ...form, rtoLossPerReturn: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Unrecoverable reverse courier + scrap pack</span>
+            </div>
           </div>
         </div>
 
-        {error && (
-          <div className="bg-rose-50 border-2 border-rose-200 text-rose-800 text-sm font-semibold rounded-2xl p-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-            <span>{error}</span>
+        {/* Section 6: Full GST Operating Center (Input, Output, ITC) */}
+        <div className="bg-white border-2 border-indigo-200 rounded-3xl p-6 md:p-8 shadow-xs">
+          <div className="flex items-center gap-2 mb-4">
+            <Receipt className="w-5 h-5 text-indigo-600" />
+            <h2 className="font-bold text-slate-900 text-lg">Indian GST Operating Center & ITC Reconciliation</h2>
           </div>
-        )}
 
-        {/* Big Calculate Button */}
-        <button
-          onClick={handleCalculate}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg py-4 px-8 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-99 transition-all cursor-pointer flex items-center justify-center gap-2"
-        >
-          <Calculator className="w-5 h-5" />
-          <span>Update All Calculations & Projections</span>
-        </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={form.isGSTRegistered}
+                    onChange={(e) => {
+                      const updated = { ...form, isGSTRegistered: e.target.checked };
+                      setForm(updated);
+                      recalc(updated, materials);
+                    }}
+                    className="w-4 h-4 text-indigo-600 rounded"
+                  />
+                  <span>GST Registered Seller</span>
+                </label>
+                <p className="text-[11px] text-slate-400 mt-1">If uncheck, selling price is full revenue and input tax is a sunk cost.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={form.claimITC}
+                    disabled={!form.isGSTRegistered}
+                    onChange={(e) => {
+                      const updated = { ...form, claimITC: e.target.checked };
+                      setForm(updated);
+                      recalc(updated, materials);
+                    }}
+                    className="w-4 h-4 text-indigo-600 rounded"
+                  />
+                  <span>Claim Input Tax Credit (ITC)</span>
+                </label>
+                <p className="text-[11px] text-slate-400 mt-1">Offsets raw material GST against output tax owed.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Output GST Rate
+              </label>
+              <select
+                value={form.outputGSTRatePercent}
+                disabled={!form.isGSTRegistered}
+                onChange={(e) => {
+                  const updated = { ...form, outputGSTRatePercent: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800"
+              >
+                <option value="0">0% (Nil / Exempt)</option>
+                <option value="5">5% Concessional Rate</option>
+                <option value="12">12% Standard Rate</option>
+                <option value="18">18% Standard Rate</option>
+                <option value="28">28% Luxury Rate</option>
+              </select>
+              <label className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.isPriceGSTInclusive}
+                  onChange={(e) => {
+                    const updated = { ...form, isPriceGSTInclusive: e.target.checked };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-3.5 h-3.5 rounded"
+                />
+                <span>Price is GST-Inclusive</span>
+              </label>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Supply Destination
+              </label>
+              <select
+                value={form.supplyType}
+                disabled={!form.isGSTRegistered}
+                onChange={(e) => {
+                  const updated = { ...form, supplyType: e.target.value as any };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800"
+              >
+                <option value="intra-state">Intra-State (CGST + SGST)</option>
+                <option value="inter-state">Inter-State (IGST)</option>
+              </select>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {form.supplyType === 'intra-state' ? 'Split 50% Center, 50% State' : '100% IGST'}
+              </span>
+            </div>
+          </div>
+
+          {/* Real-time GST Statement Table */}
+          {result && form.isGSTRegistered && (
+            <div className="bg-slate-900 text-white rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                  Tax Reconciliation Summary (Per Unit)
+                </span>
+                <span className="text-xs text-slate-400">HSN: {form.hsnCode} ({form.outputGSTRatePercent}%)</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 block mb-0.5">Taxable Sales Value:</span>
+                  <span className="text-base font-black text-white">₹{result.gst.taxableValue.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-0.5">Output GST Collected:</span>
+                  <span className="text-base font-black text-amber-400">₹{result.gst.outputGSTTotal.toFixed(2)}</span>
+                  <span className="text-[10px] text-slate-500 block">
+                    {form.supplyType === 'intra-state'
+                      ? `CGST ₹${result.gst.cgstAmount.toFixed(2)} + SGST ₹${result.gst.sgstAmount.toFixed(2)}`
+                      : `IGST ₹${result.gst.igstAmount.toFixed(2)}`}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-0.5">Raw Material ITC Claimed:</span>
+                  <span className="text-base font-black text-emerald-400">₹{result.gst.eligibleITC.toFixed(2)}</span>
+                  <span className="text-[10px] text-slate-500 block">Total Input Tax Credit</span>
+                </div>
+                <div className="bg-indigo-950/80 border border-indigo-700/50 p-2.5 rounded-xl">
+                  <span className="text-indigo-300 block mb-0.5 font-bold">Net Cash Tax Payable:</span>
+                  <span className="text-xl font-black text-white">₹{result.gst.netGSTPayable.toFixed(2)}</span>
+                  <span className="text-[10px] text-indigo-300 block">Cash outflow to Govt</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Results Section */}
+      {/* Comprehensive Output Section */}
       {result && (
         <div className="space-y-8 pt-4">
-          {/* Detailed Breakdown Card */}
-          <div className="bg-white border-2 border-indigo-200 rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-black text-slate-900">
-                  Cost Breakdown per Saleable Unit — {form.productName}
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Based on a batch of {form.batchSize} units ({result.saleableYield} saleable yield).
-                </p>
-              </div>
-            </div>
+          {/* Detailed Cost Summary Card */}
+          <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+            <h3 className="text-xl font-black text-slate-900 mb-6">
+              Complete Cost & Fee Schedule per Saleable Unit
+            </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Material Cost</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{result.materialCostPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">Total batch: ₹{result.totalMaterialCost.toFixed(0)}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Materials</span>
+                <div className="text-base font-black text-slate-900 mt-0.5">₹{result.materialCostPerUnit.toFixed(2)}</div>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Labour Cost</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{result.labourCostPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">Total batch: ₹{result.labourCostPerBatch.toFixed(0)}</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Direct Labour</span>
+                <div className="text-base font-black text-slate-900 mt-0.5">₹{result.labourCostPerUnit.toFixed(2)}</div>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Packaging Cost</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{form.packagingPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">Boxes, labels, cards</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Packaging</span>
+                <div className="text-base font-black text-slate-900 mt-0.5">₹{form.packagingPerUnit.toFixed(2)}</div>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Batch Overhead</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{result.overheadPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">Power, rent, tools</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Platform + GST</span>
+                <div className="text-base font-black text-slate-900 mt-0.5">₹{result.totalPlatformFeePerUnit.toFixed(2)}</div>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Platform & Pay Fee</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{result.platformFeeAmount.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">{form.platformFeePercent}% + ₹{form.platformFeeFixed}</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Shipping + RTO</span>
+                <div className="text-base font-black text-slate-900 mt-0.5">₹{(result.shippingCostPerUnit + result.rtoAllowancePerUnit).toFixed(2)}</div>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Shipping Paid</span>
-                <div className="text-lg font-bold text-slate-900 mt-1">₹{result.shippingCostPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-slate-400">Seller absorption</span>
-              </div>
-
-              <div className="bg-indigo-600 text-white rounded-xl p-4 col-span-2 sm:col-span-1 md:col-span-2">
-                <span className="text-[11px] font-bold text-indigo-200 uppercase">True Total Cost / Unit</span>
-                <div className="text-2xl font-black mt-1">₹{result.totalCostPerUnit.toFixed(2)}</div>
-                <span className="text-[10px] text-indigo-200 font-medium">All material, labour, packaging & fees included</span>
-              </div>
-            </div>
-
-            {/* Line-by-line Materials Breakdown */}
-            <div className="border-t border-slate-100 pt-6">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">
-                Materials Fraction Breakdown
-              </h4>
-              <div className="space-y-2">
-                {result.materialBreakdown.map((m) => (
-                  <div key={m.name} className="flex items-center justify-between text-xs py-1.5 px-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-700">{m.name}</span>
-                    <span className="font-bold text-slate-900">₹{m.cost.toFixed(2)} per batch (₹{(m.cost / result.saleableYield).toFixed(2)}/unit)</span>
-                  </div>
-                ))}
+              <div className="bg-indigo-600 text-white rounded-xl p-3">
+                <span className="text-[10px] font-bold text-indigo-200 uppercase">True Cost / Unit</span>
+                <div className="text-lg font-black mt-0.5">₹{result.totalCostPerUnit.toFixed(2)}</div>
               </div>
             </div>
           </div>
 
-          {/* Suggested Price Scenarios Table */}
+          {/* Pricing Scenarios */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-xl font-black text-slate-900">Suggested Retail Pricing Scenarios</h3>
+              <h3 className="text-xl font-black text-slate-900">Recommended Selling Price Scenarios</h3>
             </div>
             <p className="text-xs text-slate-500 mb-6">
-              Markup is added on cost. Target Margin represents your share of the final customer price.
+              Direct cost per unit is ₹{result.totalDirectCostPerUnit.toFixed(2)}. Compare how different markup and target gross margin targets impact your retail price:
             </p>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="pb-3">Strategy</th>
-                    <th className="pb-3">Multiplier</th>
+                    <th className="pb-3">Pricing Formula</th>
+                    <th className="pb-3">Target %</th>
                     <th className="pb-3">Suggested Price</th>
                     <th className="pb-3">Net Profit / Unit</th>
                     <th className="pb-3">Gross Margin</th>
@@ -726,7 +959,7 @@ export default function CalculatorPage() {
                   {prices.map((p, idx) => (
                     <tr key={idx} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 font-semibold text-slate-800">
-                        {p.method === 'markup' ? '📈 Standard Markup' : '🎯 Target Gross Margin'}
+                        {p.method === 'markup' ? '📈 Cost Markup' : '🎯 Target Gross Margin'}
                       </td>
                       <td className="py-3 font-bold text-indigo-700">{p.value}%</td>
                       <td className="py-3 text-base font-black text-slate-900">₹{p.suggestedPrice.toFixed(0)}</td>
@@ -739,7 +972,7 @@ export default function CalculatorPage() {
             </div>
           </div>
 
-          {/* Scaled Material Shopping List */}
+          {/* Ready-to-Order Bulk Shopping List */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
@@ -748,7 +981,7 @@ export default function CalculatorPage() {
                   <h3 className="text-xl font-black text-slate-900">Ready-To-Order Shopping List</h3>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Automatically rounded up to whole supplier pack sizes, including your historical waste factor.
+                  Supplier pack sizes rounded upward, incorporating your {form.failedUnits > 0 ? (((form.failedUnits) / form.batchSize) * 100).toFixed(0) : 0}% scrap rate allowance.
                 </p>
               </div>
 
@@ -756,8 +989,8 @@ export default function CalculatorPage() {
                 <span className="text-xs font-bold text-slate-600">Target Production:</span>
                 <input
                   type="number"
-                  value={form.targetUnits}
-                  onChange={(e) => setForm((f: any) => ({ ...f, targetUnits: parseInt(e.target.value) || 1 }))}
+                  value={targetUnits}
+                  onChange={(e) => setTargetUnits(parseInt(e.target.value) || 1)}
                   className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center text-indigo-700"
                 />
                 <span className="text-xs font-medium text-slate-500">saleable units</span>
@@ -783,7 +1016,7 @@ export default function CalculatorPage() {
                       </td>
                       <td className="py-3">
                         <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md border border-indigo-200">
-                          {item.packsNeeded} pack{item.packsNeeded > 1 ? 's' : ''}
+                          {item.packsNeeded} pack{item.packsNeeded > 1 ? 's' : ''} (₹{item.packPrice}/pack)
                         </span>
                       </td>
                       <td className="py-3 text-right font-bold text-slate-900">₹{item.estimatedCost.toFixed(2)}</td>

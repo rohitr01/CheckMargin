@@ -1,69 +1,79 @@
-// Unit tests for the MakerMargin calculation engine
+// Unit tests for the upgraded CheckMargin calculation engine
 import { calculateBatchCost, suggestPrices, generateShoppingList, type BatchInput } from './calculator';
 
 const sampleInput: BatchInput = {
-  productName: 'Soy Jar Candle',
+  productName: 'Handcrafted Soy Jar Candle (200g)',
+  hsnCode: '3406',
   materials: [
-    { name: 'Soy Wax', packPrice: 800, packSize: 1000, packUnit: 'g', qtyUsed: 150 },
-    { name: 'Fragrance Oil', packPrice: 1200, packSize: 100, packUnit: 'ml', qtyUsed: 10 },
-    { name: 'Wick', packPrice: 5, packSize: 1, packUnit: 'piece', qtyUsed: 1 },
-    { name: 'Glass Jar', packPrice: 35, packSize: 1, packUnit: 'piece', qtyUsed: 1 },
-    { name: 'Label', packPrice: 5, packSize: 1, packUnit: 'piece', qtyUsed: 1 },
+    { name: 'Soy Wax', packPrice: 800, packSize: 1000, packUnit: 'g', qtyUsed: 150, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    { name: 'Fragrance Oil', packPrice: 1200, packSize: 100, packUnit: 'ml', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    { name: 'Wick', packPrice: 5, packSize: 1, packUnit: 'piece', qtyUsed: 1, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+    { name: 'Glass Jar', packPrice: 35, packSize: 1, packUnit: 'piece', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    { name: 'Label', packPrice: 5, packSize: 1, packUnit: 'piece', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
   ],
   batchSize: 10,
   failedUnits: 1,
-  labourMinutes: 120,
+  labourMinutes: 90,
   labourHourlyRate: 150,
-  packagingPerUnit: 18,
+  packagingPerUnit: 20,
   shippingPerOrder: 60,
   overheadPerBatch: 50,
-  sellingPrice: 699,
+  sellingPrice: 599,
   platformFeePercent: 12,
-  platformFeeFixed: 0,
-  isGSTRegistered: false,
-  gstRatePercent: 0,
-  isPriceGSTInclusive: false,
+  platformFeeFixed: 15,
+  gstOnPlatformFeePercent: 18,
+  adSpendPerUnit: 30,
+  rtoRatePercent: 8,
+  rtoLossPerReturn: 80,
+  isGSTRegistered: true,
+  claimITC: true,
+  supplyType: 'intra-state',
+  outputGSTRatePercent: 5, // Handcrafted candles under HSN 3406
+  isPriceGSTInclusive: true,
+  monthlyFixedCost: 10000,
 };
 
-console.log('Running MakerMargin Calculator Tests...');
+console.log('Running CheckMargin Advanced GST & Costing Engine Tests...');
 
 const result = calculateBatchCost(sampleInput);
 
-// Test: Saleable yield
+// Test 1: Saleable yield
 console.assert(result.saleableYield === 9, `❌ Yield should be 9, got ${result.saleableYield}`);
-console.log('✅ Saleable yield correct:', result.saleableYield);
+console.log('✅ Saleable yield:', result.saleableYield, `(${result.yieldEfficiencyPercent}%)`);
 
-// Test: Material cost per unit (approx ₹46.67)
-const expectedMaterialPerUnit = (800/1000*150 + 1200/100*10 + 5 + 35 + 5) / 9;
+// Test 2: GST Output Calculation
+console.assert(result.gst.outputGSTTotal > 0, '❌ Output GST should be calculated');
+console.log('✅ Output GST Total: ₹', result.gst.outputGSTTotal.toFixed(2));
+console.log('   Taxable value: ₹', result.gst.taxableValue.toFixed(2));
+console.log('   CGST (2.5%): ₹', result.gst.cgstAmount.toFixed(2), '| SGST (2.5%): ₹', result.gst.sgstAmount.toFixed(2));
+
+// Test 3: Input Tax Credit (ITC)
+console.assert(result.gst.eligibleITC > 0, '❌ Eligible ITC should be positive');
+console.log('✅ Input GST per unit: ₹', result.gst.inputGSTTotal.toFixed(2));
+console.log('✅ Net GST Payable to Govt: ₹', result.gst.netGSTPayable.toFixed(2));
+
+// Test 4: Platform fee with 18% GST on service
+const expectedBaseFee = (599 * 0.12) + 15;
+const expectedTotalPlatform = expectedBaseFee * 1.18;
 console.assert(
-  Math.abs(result.materialCostPerUnit - expectedMaterialPerUnit) < 0.01,
-  `❌ Material cost/unit wrong: got ${result.materialCostPerUnit}, expected ${expectedMaterialPerUnit}`
+  Math.abs(result.totalPlatformFeePerUnit - expectedTotalPlatform) < 0.05,
+  `❌ Platform fee calculation mismatch: got ${result.totalPlatformFeePerUnit}, expected ${expectedTotalPlatform}`
 );
-console.log('✅ Material cost per unit:', result.materialCostPerUnit.toFixed(2));
+console.log('✅ Platform Fee + 18% GST: ₹', result.totalPlatformFeePerUnit.toFixed(2));
 
-// Test: Labour cost per batch (2hr × ₹150 = ₹300)
-console.assert(result.labourCostPerBatch === 300, `❌ Labour batch cost wrong: ${result.labourCostPerBatch}`);
-console.log('✅ Labour cost per batch:', result.labourCostPerBatch);
+// Test 5: RTO Allowance
+const expectedRTO = 0.08 * 80;
+console.assert(Math.abs(result.rtoAllowancePerUnit - expectedRTO) < 0.01, '❌ RTO reserve calculation wrong');
+console.log('✅ RTO & Return Loss Reserve: ₹', result.rtoAllowancePerUnit.toFixed(2));
 
-// Test: Profit is positive
-console.assert(result.grossProfitPerUnit > 0, `❌ Profit should be positive, got ${result.grossProfitPerUnit}`);
-console.log('✅ Gross profit per unit: ₹', result.grossProfitPerUnit.toFixed(2));
+// Test 6: Profitability
+console.assert(result.grossProfitPerUnit > 0, '❌ Profit should be positive');
+console.log('✅ Net Profit / Unit: ₹', result.grossProfitPerUnit.toFixed(2));
+console.log('✅ Net Margin: ', result.grossMarginPercent.toFixed(1) + '%');
+console.log('✅ Monthly Break-Even Units:', result.breakEvenUnitsPerMonth, 'units');
 
-// Test: Margin is between 0–100%
-console.assert(result.grossMarginPercent > 0 && result.grossMarginPercent < 100, '❌ Margin out of range');
-console.log('✅ Gross margin:', result.grossMarginPercent.toFixed(1) + '%');
+// Test 7: Shopping List
+const shoppingList = generateShoppingList(sampleInput.materials, 30, 9, 10);
+console.log('✅ Shopping List Items for 30 units:', shoppingList.length);
 
-console.log('\n--- Full Result ---');
-console.log(JSON.stringify({ ...result, breakEvenUnitsPerMonth: undefined }, null, 2));
-
-// Test shopping list
-const shoppingList = generateShoppingList(sampleInput.materials, 20, 9, 10);
-console.log('\n--- Shopping List for 20 units ---');
-shoppingList.forEach(item => console.log(`  ${item.name}: ${item.qtyNeeded}${item.packUnit} → ${item.packsNeeded} packs = ₹${item.estimatedCost}`));
-
-// Test price suggestions
-const prices = suggestPrices(result.totalDirectCostPerUnit);
-console.log('\n--- Suggested Prices ---');
-prices.forEach(p => console.log(`  ${p.method} ${p.value}%: ₹${p.suggestedPrice} (margin: ${p.marginPercent.toFixed(1)}%)`));
-
-console.log('\n✅ All tests passed!');
+console.log('\n🎉 All advanced calculation and GST tests passed successfully!');

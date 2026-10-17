@@ -1,53 +1,182 @@
-// MakerMargin Core Calculation Engine
-// Pure functions — no side effects, fully testable
+// CheckMargin Core Calculation Engine
+// Pure functions — deterministic, transparent, and comprehensive
 
 export interface Material {
   name: string;
-  packPrice: number;   // price paid per pack (₹)
-  packSize: number;    // size of pack (in unit below)
-  packUnit: string;    // e.g. 'g', 'ml', 'piece', 'metre'
-  qtyUsed: number;     // quantity used per batch (same unit)
+  packPrice: number;        // price paid per pack (₹)
+  packSize: number;         // size of pack
+  packUnit: string;         // 'g' | 'kg' | 'ml' | 'L' | 'piece' | 'metre' | 'pack'
+  qtyUsed: number;          // quantity used per batch (same unit)
+  gstRatePercent?: number;  // input GST on this material (e.g. 0, 5, 12, 18)
+  isPackPriceGSTInclusive?: boolean; // whether packPrice includes GST (default true)
 }
+
+export interface ChannelPreset {
+  id: string;
+  name: string;
+  feePercent: number;
+  fixedFee: number;
+  shipping: number;
+  gstOnFeesPercent: number; // usually 18% on marketplace commission
+  notes: string;
+}
+
+export const CHANNEL_PRESETS: ChannelPreset[] = [
+  {
+    id: 'amazon',
+    name: 'Amazon India (Easy Ship)',
+    feePercent: 12,
+    fixedFee: 15,
+    shipping: 65,
+    gstOnFeesPercent: 18,
+    notes: 'Avg 12% referral + ₹15 closing + ₹65 shipping + 18% GST on services',
+  },
+  {
+    id: 'meesho',
+    name: 'Meesho (0% Commission)',
+    feePercent: 0,
+    fixedFee: 0,
+    shipping: 60,
+    gstOnFeesPercent: 18,
+    notes: '0% platform fee, seller pays return & logistics charges',
+  },
+  {
+    id: 'etsy',
+    name: 'Etsy India (Domestic)',
+    feePercent: 9.5, // 6.5% transaction + 3% payment
+    fixedFee: 17,    // ~$0.20 listing fee
+    shipping: 70,
+    gstOnFeesPercent: 18,
+    notes: '6.5% transaction + 3% payment + ₹17 listing + 18% GST',
+  },
+  {
+    id: 'shopify',
+    name: 'Own Website (Razorpay/Shopify)',
+    feePercent: 2,   // 2% gateway fee
+    fixedFee: 3,     // gateway flat fee
+    shipping: 55,    // private 3PL courier
+    gstOnFeesPercent: 18,
+    notes: '2% PG fee + ₹3 flat + 3PL courier + 18% GST on PG fee',
+  },
+  {
+    id: 'fleamarket',
+    name: 'Offline Market / Pop-up Stall',
+    feePercent: 0,
+    fixedFee: 0,
+    shipping: 0,
+    gstOnFeesPercent: 0,
+    notes: 'Direct in-person sales (no gateway/shipping)',
+  },
+  {
+    id: 'custom',
+    name: 'Custom Channel',
+    feePercent: 0,
+    fixedFee: 0,
+    shipping: 0,
+    gstOnFeesPercent: 18,
+    notes: 'User configurable rates',
+  },
+];
 
 export interface BatchInput {
   productName: string;
+  hsnCode?: string;         // e.g. '3406'
   materials: Material[];
-  batchSize: number;        // total units made (including failed)
-  failedUnits: number;      // units that didn't make it to sale
-  labourMinutes: number;    // total batch labour in minutes
+  batchSize: number;        // total units made
+  failedUnits: number;      // units that didn't pass quality inspection
+  labourMinutes: number;    // total batch craft labour in minutes
   labourHourlyRate: number; // ₹ per hour
-  packagingPerUnit: number; // ₹ per saleable unit
-  shippingPerOrder: number; // seller-paid shipping ₹ (0 if buyer pays)
-  overheadPerBatch: number; // fixed overhead to allocate per batch
-  sellingPrice: number;     // target/actual selling price per unit
-  platformFeePercent: number; // e.g. 12 for 12%
-  platformFeeFixed: number;   // fixed fee per order (₹)
+  packagingPerUnit: number; // ₹ per saleable unit (boxes, inserts, labels)
+  overheadPerBatch: number; // studio rent, heating, tools depreciation per batch
+  
+  // Selling & Marketing
+  sellingPrice: number;     // customer facing price
+  channelId?: string;       // preset ID
+  platformFeePercent: number;
+  platformFeeFixed: number;
+  gstOnPlatformFeePercent: number; // 18% GST on platform service fees
+  shippingPerOrder: number; // seller-paid shipping ₹
+  adSpendPerUnit: number;   // Meta/Google ads CAC allocation per unit
+  rtoRatePercent: number;   // return/RTO rate % (e.g. 5%)
+  rtoLossPerReturn: number; // damaged packaging + reverse freight loss
+
+  // Comprehensive GST Settings
   isGSTRegistered: boolean;
-  gstRatePercent: number;     // e.g. 18
+  claimITC: boolean;        // can claim Input Tax Credit on raw materials
+  supplyType: 'intra-state' | 'inter-state'; // CGST+SGST vs IGST
+  outputGSTRatePercent: number; // e.g. 5, 12, 18
   isPriceGSTInclusive: boolean;
+
+  // Monthly overhead for break-even
+  monthlyFixedCost?: number;
+}
+
+export interface GSTBreakdown {
+  isRegistered: boolean;
+  claimITC: boolean;
+  supplyType: 'intra-state' | 'inter-state';
+  hsnCode: string;
+  outputRatePercent: number;
+  grossSellingPrice: number;
+  taxableValue: number;      // selling price ex-tax
+  outputGSTTotal: number;
+  cgstAmount: number;        // half of output GST if intra-state
+  sgstAmount: number;        // half of output GST if intra-state
+  igstAmount: number;        // full output GST if inter-state
+  inputGSTTotal: number;     // tax paid on materials
+  eligibleITC: number;       // recoverable tax
+  netGSTPayable: number;     // cash tax owed to government
+  itcCreditForward: number;  // excess credit carry forward
 }
 
 export interface CalculationResult {
   saleableYield: number;
+  yieldEfficiencyPercent: number;
+  
+  // Materials
   totalMaterialCost: number;
   materialCostPerUnit: number;
+  materialBreakdown: {
+    name: string;
+    baseCost: number;
+    inputGST: number;
+    totalCost: number;
+    effectiveCostPerUnit: number;
+  }[];
+
+  // Direct Production
   labourCostPerBatch: number;
   labourCostPerUnit: number;
   packagingCostTotal: number;
   overheadPerUnit: number;
   totalDirectCostPerUnit: number;
-  platformFeeAmount: number;
+
+  // Channel & Variable Selling Costs
+  platformFeeRaw: number;
+  gstOnPlatformFee: number;
+  totalPlatformFeePerUnit: number;
   shippingCostPerUnit: number;
+  adSpendPerUnit: number;
+  rtoAllowancePerUnit: number;
+  totalSellingCostPerUnit: number;
+
+  // All-inclusive Cost
   totalCostPerUnit: number;
-  sellingPriceExGST: number;
-  gstCollected: number;
+
+  // GST Reconciliation
+  gst: GSTBreakdown;
+
+  // Profitability
+  realizedRevenuePerUnit: number; // after output GST
   grossProfitPerUnit: number;
   grossMarginPercent: number;
   markupPercent: number;
   contributionMarginPerUnit: number;
-  breakEvenUnitsPerMonth: (monthlyFixed: number) => number;
-  // Material breakdown
-  materialBreakdown: { name: string; cost: number }[];
+
+  // Break-even
+  monthlyFixedCost: number;
+  breakEvenUnitsPerMonth: number;
+  breakEvenRevenuePerMonth: number;
 }
 
 export interface PriceScenario {
@@ -63,95 +192,190 @@ export interface ShoppingListItem {
   qtyNeeded: number;
   packUnit: string;
   packsNeeded: number;
+  packPrice: number;
   estimatedCost: number;
 }
 
 /**
- * Core batch cost calculation
+ * Core batch cost calculation with comprehensive GST, channel, and RTO modeling
  */
 export function calculateBatchCost(input: BatchInput): CalculationResult {
-  // Saleable yield
-  const saleableYield = Math.max(input.batchSize - input.failedUnits, 1);
+  // 1. Saleable yield
+  const batchSize = Math.max(input.batchSize, 1);
+  const failedUnits = Math.min(Math.max(input.failedUnits, 0), batchSize - 1);
+  const saleableYield = Math.max(batchSize - failedUnits, 1);
+  const yieldEfficiencyPercent = (saleableYield / batchSize) * 100;
 
-  // Material costs
-  const materialBreakdown = input.materials.map((m) => ({
-    name: m.name,
-    cost: (m.packPrice / m.packSize) * m.qtyUsed,
-  }));
-  const totalMaterialCost = materialBreakdown.reduce((sum, m) => sum + m.cost, 0);
+  // 2. Material costs with Input GST & ITC handling
+  const canClaimITC = input.isGSTRegistered && input.claimITC;
+  let totalInputGSTTotal = 0;
+
+  const materialBreakdown = input.materials.map((m) => {
+    const gstRate = m.gstRatePercent ?? 18;
+    const isInclusive = m.isPackPriceGSTInclusive ?? true;
+    const qtyRatio = m.packSize > 0 ? m.qtyUsed / m.packSize : 0;
+    
+    let basePackPrice = m.packPrice;
+    let packGST = 0;
+
+    if (gstRate > 0) {
+      if (isInclusive) {
+        basePackPrice = m.packPrice / (1 + gstRate / 100);
+        packGST = m.packPrice - basePackPrice;
+      } else {
+        basePackPrice = m.packPrice;
+        packGST = m.packPrice * (gstRate / 100);
+      }
+    }
+
+    const batchBaseCost = basePackPrice * qtyRatio;
+    const batchGST = packGST * qtyRatio;
+    const batchTotalPaid = batchBaseCost + batchGST;
+
+    totalInputGSTTotal += batchGST;
+
+    // If maker claims ITC, the input GST is recovered from the government,
+    // so business cost is baseCost. If unregistered, GST paid is a sunk cost.
+    const effectiveBatchCost = canClaimITC ? batchBaseCost : batchTotalPaid;
+    const effectiveCostPerUnit = effectiveBatchCost / saleableYield;
+
+    return {
+      name: m.name,
+      baseCost: batchBaseCost,
+      inputGST: batchGST,
+      totalCost: batchTotalPaid,
+      effectiveCostPerUnit,
+    };
+  });
+
+  const totalMaterialCost = materialBreakdown.reduce((sum, m) => sum + (canClaimITC ? m.baseCost : m.totalCost), 0);
   const materialCostPerUnit = totalMaterialCost / saleableYield;
 
-  // Labour
+  // 3. Direct Labour
   const labourCostPerBatch = (input.labourMinutes / 60) * input.labourHourlyRate;
   const labourCostPerUnit = labourCostPerBatch / saleableYield;
 
-  // Packaging
+  // 4. Packaging & Overhead
   const packagingCostTotal = input.packagingPerUnit * saleableYield;
-
-  // Overhead
   const overheadPerUnit = input.overheadPerBatch / saleableYield;
 
-  // Shipping (seller-paid, split across units in batch — simplified: per order = per unit)
-  const shippingCostPerUnit = input.shippingPerOrder;
-
-  // Total direct cost per saleable unit
+  // Total Direct Production Cost per saleable unit
   const totalDirectCostPerUnit =
     materialCostPerUnit +
     labourCostPerUnit +
     input.packagingPerUnit +
     overheadPerUnit;
 
-  // Platform fee (applied on selling price)
-  const platformFeeAmount =
-    (input.sellingPrice * input.platformFeePercent) / 100 + input.platformFeeFixed;
+  // 5. Output GST Modeling
+  let taxableValue = input.sellingPrice;
+  let outputGSTTotal = 0;
 
-  // Total cost per unit (everything including selling costs)
-  const totalCostPerUnit = totalDirectCostPerUnit + platformFeeAmount + shippingCostPerUnit;
-
-  // GST handling
-  let sellingPriceExGST = input.sellingPrice;
-  let gstCollected = 0;
-  if (input.isGSTRegistered && input.gstRatePercent > 0) {
+  if (input.isGSTRegistered && input.outputGSTRatePercent > 0) {
     if (input.isPriceGSTInclusive) {
-      sellingPriceExGST = input.sellingPrice / (1 + input.gstRatePercent / 100);
-      gstCollected = input.sellingPrice - sellingPriceExGST;
+      taxableValue = input.sellingPrice / (1 + input.outputGSTRatePercent / 100);
+      outputGSTTotal = input.sellingPrice - taxableValue;
     } else {
-      sellingPriceExGST = input.sellingPrice;
-      gstCollected = input.sellingPrice * (input.gstRatePercent / 100);
+      taxableValue = input.sellingPrice;
+      outputGSTTotal = input.sellingPrice * (input.outputGSTRatePercent / 100);
     }
   }
 
-  // Profit & margins (based on ex-GST selling price)
-  const grossProfitPerUnit = sellingPriceExGST - totalCostPerUnit;
+  const isIntraState = input.supplyType === 'intra-state';
+  const cgstAmount = isIntraState ? outputGSTTotal / 2 : 0;
+  const sgstAmount = isIntraState ? outputGSTTotal / 2 : 0;
+  const igstAmount = !isIntraState ? outputGSTTotal : 0;
+
+  const inputGSTPerUnit = totalInputGSTTotal / saleableYield;
+  const eligibleITC = canClaimITC ? inputGSTPerUnit : 0;
+  const netGSTPayable = Math.max(0, outputGSTTotal - eligibleITC);
+  const itcCreditForward = Math.max(0, eligibleITC - outputGSTTotal);
+
+  const gstBreakdown: GSTBreakdown = {
+    isRegistered: input.isGSTRegistered,
+    claimITC: input.claimITC,
+    supplyType: input.supplyType,
+    hsnCode: input.hsnCode || '3406',
+    outputRatePercent: input.outputGSTRatePercent,
+    grossSellingPrice: input.sellingPrice,
+    taxableValue,
+    outputGSTTotal,
+    cgstAmount,
+    sgstAmount,
+    igstAmount,
+    inputGSTTotal: inputGSTPerUnit,
+    eligibleITC,
+    netGSTPayable,
+    itcCreditForward,
+  };
+
+  // 6. Platform Fees with 18% GST on services
+  const baseCommission = (input.sellingPrice * input.platformFeePercent) / 100 + input.platformFeeFixed;
+  const gstOnPlatformFee = baseCommission * ((input.gstOnPlatformFeePercent || 18) / 100);
+  const totalPlatformFeePerUnit = baseCommission + gstOnPlatformFee;
+
+  // 7. Shipping, Ads & RTO Reserve
+  const shippingCostPerUnit = input.shippingPerOrder;
+  const adSpendPerUnit = input.adSpendPerUnit || 0;
+  const rtoRate = (input.rtoRatePercent || 0) / 100;
+  const rtoLossPerReturn = input.rtoLossPerReturn || (shippingCostPerUnit + input.packagingPerUnit);
+  const rtoAllowancePerUnit = rtoRate * rtoLossPerReturn;
+
+  const totalSellingCostPerUnit =
+    totalPlatformFeePerUnit +
+    shippingCostPerUnit +
+    adSpendPerUnit +
+    rtoAllowancePerUnit;
+
+  // 8. Total True Cost
+  const totalCostPerUnit = totalDirectCostPerUnit + totalSellingCostPerUnit;
+
+  // 9. Realized Revenue & Profitability
+  // If GST registered, GST collected belongs to the government, so net realized revenue is taxableValue.
+  // If unregistered, selling price is full revenue (no tax owed).
+  const realizedRevenuePerUnit = input.isGSTRegistered ? taxableValue : input.sellingPrice;
+  const grossProfitPerUnit = realizedRevenuePerUnit - totalCostPerUnit;
   const grossMarginPercent =
-    sellingPriceExGST > 0 ? (grossProfitPerUnit / sellingPriceExGST) * 100 : 0;
+    realizedRevenuePerUnit > 0 ? (grossProfitPerUnit / realizedRevenuePerUnit) * 100 : 0;
   const markupPercent =
     totalDirectCostPerUnit > 0
-      ? ((sellingPriceExGST - totalDirectCostPerUnit) / totalDirectCostPerUnit) * 100
+      ? ((realizedRevenuePerUnit - totalDirectCostPerUnit) / totalDirectCostPerUnit) * 100
       : 0;
-  const contributionMarginPerUnit = sellingPriceExGST - totalCostPerUnit;
+  const contributionMarginPerUnit = grossProfitPerUnit;
+
+  // 10. Break-even analysis
+  const monthlyFixedCost = input.monthlyFixedCost ?? 15000;
+  const breakEvenUnitsPerMonth =
+    contributionMarginPerUnit > 0 ? Math.ceil(monthlyFixedCost / contributionMarginPerUnit) : 0;
+  const breakEvenRevenuePerMonth = breakEvenUnitsPerMonth * input.sellingPrice;
 
   return {
     saleableYield,
+    yieldEfficiencyPercent,
     totalMaterialCost,
     materialCostPerUnit,
+    materialBreakdown,
     labourCostPerBatch,
     labourCostPerUnit,
     packagingCostTotal,
     overheadPerUnit,
     totalDirectCostPerUnit,
-    platformFeeAmount,
+    platformFeeRaw: baseCommission,
+    gstOnPlatformFee,
+    totalPlatformFeePerUnit,
     shippingCostPerUnit,
+    adSpendPerUnit,
+    rtoAllowancePerUnit,
+    totalSellingCostPerUnit,
     totalCostPerUnit,
-    sellingPriceExGST,
-    gstCollected,
+    gst: gstBreakdown,
+    realizedRevenuePerUnit,
     grossProfitPerUnit,
     grossMarginPercent,
     markupPercent,
     contributionMarginPerUnit,
-    breakEvenUnitsPerMonth: (monthlyFixed: number) =>
-      contributionMarginPerUnit > 0 ? Math.ceil(monthlyFixed / contributionMarginPerUnit) : Infinity,
-    materialBreakdown,
+    monthlyFixedCost,
+    breakEvenUnitsPerMonth,
+    breakEvenRevenuePerMonth,
   };
 }
 
@@ -197,18 +421,19 @@ export function generateShoppingList(
   currentBatchSaleableYield: number,
   currentBatchSize: number
 ): ShoppingListItem[] {
-  const yieldRatio = currentBatchSaleableYield / currentBatchSize; // e.g. 0.9 if 10% waste
+  const yieldRatio = Math.max(currentBatchSaleableYield / Math.max(currentBatchSize, 1), 0.1);
   const requiredBatchSize = Math.ceil(targetSaleableUnits / yieldRatio);
 
   return materials.map((m) => {
-    const qtyNeeded = (m.qtyUsed / currentBatchSize) * requiredBatchSize;
-    const packsNeeded = Math.ceil(qtyNeeded / m.packSize);
+    const qtyNeeded = (m.qtyUsed / Math.max(currentBatchSize, 1)) * requiredBatchSize;
+    const packsNeeded = Math.ceil(qtyNeeded / Math.max(m.packSize, 1));
     const estimatedCost = packsNeeded * m.packPrice;
     return {
       name: m.name,
       qtyNeeded: Math.round(qtyNeeded * 100) / 100,
       packUnit: m.packUnit,
       packsNeeded,
+      packPrice: m.packPrice,
       estimatedCost,
     };
   });
