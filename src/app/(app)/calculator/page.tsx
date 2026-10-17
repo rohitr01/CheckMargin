@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
   calculateBatchCost,
@@ -42,17 +43,88 @@ import {
   Search,
   Zap,
   SlidersHorizontal,
+  Globe,
+  Laptop,
+  Download,
 } from 'lucide-react';
 
 const HSN_PRESETS = [
-  { code: '3406', name: 'Candles & Tapres', defaultRate: 5 },
+  { code: '3406', name: 'Candles & Tapers', defaultRate: 5 },
   { code: '3401', name: 'Soaps & Cleansing Bars', defaultRate: 5 },
   { code: '1905', name: 'Bakery, Cakes, Biscuits', defaultRate: 5 },
   { code: '3304', name: 'Cosmetics, Skincare, Serums', defaultRate: 18 },
   { code: '3926', name: 'Resin Art & Molded Plastic Decor', defaultRate: 18 },
   { code: '6815', name: 'Jesmonite, Cement & Plaster Decor', defaultRate: 18 },
   { code: '6204', name: 'Apparel & Handmade Garments', defaultRate: 12 },
+  { code: '7117', name: 'Imitation Jewellery & Clay Earrings', defaultRate: 3 },
   { code: '9999', name: 'Other General Goods', defaultRate: 18 },
+];
+
+const SAC_PRESETS = [
+  { code: '9984', name: 'Digital Downloads & OIDAR (Templates, Ebooks, Presets)', defaultRate: 18 },
+  { code: '9983', name: '3D STL Files, Vector Assets, Fonts & Digital Art', defaultRate: 18 },
+  { code: '998314', name: 'Custom Software, Web Apps & UI/UX Design', defaultRate: 18 },
+  { code: '998361', name: 'Digital Marketing, Brand & Photography Services', defaultRate: 18 },
+];
+
+const DIGITAL_PRESETS = [
+  {
+    name: 'Notion Life & Business OS Template',
+    sac: '9984',
+    sellingPrice: 999,
+    channelId: 'gumroad',
+    platformFeePercent: 10,
+    platformFeeFixed: 0,
+    materials: [
+      { name: 'Notion Plus & AI Subscription (Monthly allocation)', packPrice: 1500, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Canva Pro Graphics & Cover Mockup Assets', packPrice: 499, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Loom Video Tutorial & Asset Hosting', packPrice: 850, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 50,
+    labourMinutes: 240,
+    labourHourlyRate: 250,
+  },
+  {
+    name: '3D Printable STL Model & Miniature Bundle',
+    sac: '9983',
+    sellingPrice: 1499,
+    channelId: 'gumroad',
+    platformFeePercent: 10,
+    platformFeeFixed: 0,
+    materials: [
+      { name: 'Blender & ZBrush Commercial Addons', packPrice: 2200, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Cloud GPU 3D Render Farm Credits', packPrice: 1200, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Slicer & Print Validation Test Resin Sample', packPrice: 450, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 40,
+    labourMinutes: 360,
+    labourHourlyRate: 300,
+  },
+  {
+    name: 'Cinematic Lightroom Presets Pack (Mobile & Desktop)',
+    sac: '9984',
+    sellingPrice: 799,
+    channelId: 'instamojo',
+    platformFeePercent: 5,
+    platformFeeFixed: 3,
+    materials: [
+      { name: 'Adobe Creative Cloud Suite Subscription', packPrice: 1800, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'RAW Test Photography Assets & Color Target', packPrice: 800, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 50,
+    labourMinutes: 180,
+    labourHourlyRate: 250,
+  },
+];
+
+const COURIER_RATE_OPTIONS = [
+  { id: 'custom', name: 'Custom Rate / Self-Arranged Freight', freight: 0, tag: 'Manual Entry' },
+  { id: 'shiprocket', name: 'Shiprocket Multi-Courier (₹68 National / ₹38 City)', freight: 68, tag: 'Aggregator • 14+ Couriers' },
+  { id: 'delhivery', name: 'Delhivery Direct (₹72 National / ₹42 City)', freight: 72, tag: 'Direct Network • 18,500+ Pincodes' },
+  { id: 'bluedart', name: 'Blue Dart Air Express (₹125 National / ₹65 City)', freight: 125, tag: 'Air Priority • 4.8★ Fragile Safety' },
+  { id: 'indiapost', name: 'India Post Speed Post (₹50 National / ₹30 City)', freight: 50, tag: 'National • All 19,000 Pincodes' },
+  { id: 'porter', name: 'Porter Hyperlocal 2W (₹45 Intra-City)', freight: 45, tag: 'Hyperlocal • 2hr Same-day Delivery' },
+  { id: 'amazon_ats', name: 'Amazon Easy Ship (₹65 National / ₹38 Local)', freight: 65, tag: 'Amazon Integrated Pickup' },
 ];
 
 const INITIAL_MATERIALS = [
@@ -65,6 +137,7 @@ const INITIAL_MATERIALS = [
 
 const INITIAL_FORM: BatchInput = {
   productName: 'Handcrafted 200g Vanilla Soy Candle',
+  productType: 'physical',
   hsnCode: '3406',
   materials: INITIAL_MATERIALS,
   batchSize: 10,
@@ -91,6 +164,8 @@ const INITIAL_FORM: BatchInput = {
 };
 
 export default function CalculatorPage() {
+  const [productType, setProductType] = useState<'physical' | 'digital'>('physical');
+  const [selectedCourier, setSelectedCourier] = useState('custom');
   const [materials, setMaterials] = useState(INITIAL_MATERIALS);
   const [form, setForm] = useState<BatchInput>(INITIAL_FORM);
   const [targetUnits, setTargetUnits] = useState(30);
@@ -113,6 +188,84 @@ export default function CalculatorPage() {
     setResult(res);
   }
 
+  function handleProductTypeSwitch(type: 'physical' | 'digital') {
+    setProductType(type);
+    if (type === 'digital') {
+      const updated: BatchInput = {
+        ...form,
+        productType: 'digital',
+        hsnCode: '9984',
+        outputGSTRatePercent: 18,
+        failedUnits: 0,
+        packagingPerUnit: 0,
+        shippingPerOrder: 0,
+        rtoRatePercent: 0,
+        rtoLossPerReturn: 0,
+        channelId: 'gumroad',
+        platformFeePercent: 10,
+        platformFeeFixed: 0,
+      };
+      setSelectedCourier('custom');
+      setForm(updated);
+      recalc(updated, materials);
+    } else {
+      const updated: BatchInput = {
+        ...form,
+        productType: 'physical',
+        hsnCode: '3406',
+        outputGSTRatePercent: 5,
+        failedUnits: 1,
+        packagingPerUnit: 25,
+        shippingPerOrder: 65,
+        rtoRatePercent: 8,
+        rtoLossPerReturn: 90,
+        channelId: 'amazon',
+        platformFeePercent: 12,
+        platformFeeFixed: 15,
+      };
+      setSelectedCourier('shiprocket');
+      setForm(updated);
+      recalc(updated, materials);
+    }
+  }
+
+  function loadDigitalPreset(preset: typeof DIGITAL_PRESETS[0]) {
+    setProductType('digital');
+    setMaterials(preset.materials);
+    const updated: BatchInput = {
+      ...form,
+      productName: preset.name,
+      productType: 'digital',
+      hsnCode: preset.sac,
+      outputGSTRatePercent: 18,
+      sellingPrice: preset.sellingPrice,
+      channelId: preset.channelId,
+      platformFeePercent: preset.platformFeePercent,
+      platformFeeFixed: preset.platformFeeFixed,
+      batchSize: preset.batchSize,
+      failedUnits: 0,
+      labourMinutes: preset.labourMinutes,
+      labourHourlyRate: preset.labourHourlyRate,
+      packagingPerUnit: 0,
+      shippingPerOrder: 0,
+      rtoRatePercent: 0,
+      rtoLossPerReturn: 0,
+    };
+    setSelectedCourier('custom');
+    setForm(updated);
+    recalc(updated, preset.materials);
+  }
+
+  function handleCourierSelect(courierId: string) {
+    setSelectedCourier(courierId);
+    const courier = COURIER_RATE_OPTIONS.find((c) => c.id === courierId);
+    if (courier && courier.freight > 0) {
+      const updated = { ...form, shippingPerOrder: courier.freight };
+      setForm(updated);
+      recalc(updated, materials);
+    }
+  }
+
   function handleChannelChange(channelId: string) {
     const preset = CHANNEL_PRESETS.find((p) => p.id === channelId);
     if (preset) {
@@ -121,7 +274,7 @@ export default function CalculatorPage() {
         channelId,
         platformFeePercent: preset.feePercent,
         platformFeeFixed: preset.fixedFee,
-        shippingPerOrder: preset.shipping,
+        shippingPerOrder: productType === 'digital' ? 0 : preset.shipping,
         gstOnPlatformFeePercent: preset.gstOnFeesPercent,
       };
       setForm(updated);
@@ -130,7 +283,7 @@ export default function CalculatorPage() {
   }
 
   function handleHSNChange(code: string) {
-    const preset = HSN_PRESETS.find((h) => h.code === code);
+    const preset = HSN_PRESETS.find((h) => h.code === code) || SAC_PRESETS.find((s) => s.code === code);
     const updated = {
       ...form,
       hsnCode: code,
@@ -347,17 +500,85 @@ export default function CalculatorPage() {
 
       {/* Inputs Form */}
       <div className="space-y-6">
-        {/* Section 1: Product & Classification */}
+        {/* Section 1: Product Format, Title & Tax Classification */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+          {/* Format Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+            <div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Product Type</span>
+              <h2 className="font-black text-slate-900 text-lg">Choose What You Are Costing</h2>
+            </div>
+            
+            <div className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => handleProductTypeSwitch('physical')}
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  productType === 'physical'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>📦 Physical Goods</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleProductTypeSwitch('digital')}
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  productType === 'digital'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Laptop className="w-4 h-4" />
+                <span>💻 Digital Downloads & Software</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Digital Presets Bar */}
+          {productType === 'digital' && (
+            <div className="mb-6 p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                    Quick-Load Digital Presets:
+                  </span>
+                </div>
+                <span className="text-[11px] text-indigo-700 font-semibold">
+                  Zero freight, zero packaging, zero scrap allowance
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DIGITAL_PRESETS.map((p) => (
+                  <button
+                    key={p.name}
+                    type="button"
+                    onClick={() => loadDigitalPreset(p)}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-xl border border-indigo-300 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{p.name}</span>
+                    <span className="text-[10px] text-slate-400 font-normal">₹{p.sellingPrice}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">1</span>
-            <h2 className="font-bold text-slate-900 text-lg">Product Identity & Tax Category (HSN)</h2>
+            <h3 className="font-bold text-slate-900 text-base">
+              {productType === 'digital' ? 'Digital Asset Identity & SAC Classification' : 'Product Identity & Tax Category (HSN)'}
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Product Title
+                {productType === 'digital' ? 'Digital Product / Asset Name' : 'Physical Product Title'}
               </label>
               <input
                 type="text"
@@ -367,25 +588,31 @@ export default function CalculatorPage() {
                   setForm(updated);
                   recalc(updated, materials);
                 }}
-                placeholder="e.g. 200g Lavender Soy Jar Candle"
+                placeholder={productType === 'digital' ? 'e.g. Notion Minimalist Habit Tracker & OS' : 'e.g. 200g Lavender Soy Jar Candle'}
                 className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl px-4 py-2.5 font-bold text-base focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                HSN Classification
+                {productType === 'digital' ? 'Service Accounting Code (SAC)' : 'HSN Classification'}
               </label>
               <select
                 value={form.hsnCode}
                 onChange={(e) => handleHSNChange(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               >
-                {HSN_PRESETS.map((h) => (
-                  <option key={h.code} value={h.code}>
-                    HSN {h.code} - {h.name} ({h.defaultRate}%)
-                  </option>
-                ))}
+                {productType === 'digital'
+                  ? SAC_PRESETS.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        SAC {s.code} - {s.name} ({s.defaultRate}%)
+                      </option>
+                    ))
+                  : HSN_PRESETS.map((h) => (
+                      <option key={h.code} value={h.code}>
+                        HSN {h.code} - {h.name} ({h.defaultRate}%)
+                      </option>
+                    ))}
               </select>
             </div>
           </div>
@@ -625,16 +852,18 @@ export default function CalculatorPage() {
           </div>
         </div>
 
-        {/* Section 5: Sales Channel, Commissions & RTO */}
+        {/* Section 5: Sales Channel, Logistics & RTO */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">5</span>
-              <h2 className="font-bold text-slate-900 text-lg">Sales Channel, Logistics & RTO Loss Reserve</h2>
+              <h2 className="font-bold text-slate-900 text-lg">
+                {productType === 'digital' ? 'Selling Platform, Gateway Commission & CAC' : 'Sales Channel, Logistics & RTO Loss Reserve'}
+              </h2>
             </div>
             {/* Channel Preset Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase">Preset:</span>
+              <span className="text-xs font-bold text-slate-400 uppercase">Channel Preset:</span>
               <select
                 value={form.channelId}
                 onChange={(e) => handleChannelChange(e.target.value)}
@@ -648,6 +877,58 @@ export default function CalculatorPage() {
               </select>
             </div>
           </div>
+
+          {/* Physical: Courier Rate Selector */}
+          {productType === 'physical' ? (
+            <div className="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Verified Courier Shipping Rates:
+                  </span>
+                </div>
+                <Link
+                  href="/compare"
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
+                >
+                  <span>Compare all courier charges & delivery zones</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                {COURIER_RATE_OPTIONS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleCourierSelect(c.id)}
+                    className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                      selectedCourier === c.id
+                        ? 'bg-white border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className="font-bold text-slate-900 flex items-center justify-between">
+                      <span className="truncate">{c.name.split('(')[0].trim()}</span>
+                      {c.freight > 0 && <span className="text-indigo-600 font-black">₹{c.freight}</span>}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">{c.tag}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-950 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-xs text-emerald-900 uppercase tracking-wider">Zero Physical Logistics & Zero RTO Loss</h4>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Digital templates, 3D STLs, and ebooks are delivered instantly via automated download link or email. Shipping freight is ₹0, packaging is ₹0, and customer returns do not incur reverse courier freight or damaged packaging loss.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             <div>
@@ -697,19 +978,27 @@ export default function CalculatorPage() {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Seller-Paid Shipping (₹)
+                {productType === 'digital' ? 'Digital Delivery Freight' : 'Seller-Paid Shipping (₹)'}
               </label>
-              <input
-                type="number"
-                value={form.shippingPerOrder}
-                onChange={(e) => {
-                  const updated = { ...form, shippingPerOrder: parseFloat(e.target.value) || 0 };
-                  setForm(updated);
-                  recalc(updated, materials);
-                }}
-                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
-              />
-              <span className="text-[10px] text-slate-400 mt-1 block">Logistics cost if free delivery</span>
+              {productType === 'digital' ? (
+                <div className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-500 text-sm">
+                  ₹0 (Instant Download)
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  value={form.shippingPerOrder}
+                  onChange={(e) => {
+                    const updated = { ...form, shippingPerOrder: parseFloat(e.target.value) || 0 };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
+                />
+              )}
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {productType === 'digital' ? 'Delivered via web or email' : 'Logistics cost if free delivery'}
+              </span>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
@@ -729,41 +1018,43 @@ export default function CalculatorPage() {
             </div>
           </div>
 
-          {/* RTO / Returns Protection */}
-          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Expected RTO / Customer Return Rate (%)
-              </label>
-              <input
-                type="number"
-                value={form.rtoRatePercent}
-                onChange={(e) => {
-                  const updated = { ...form, rtoRatePercent: parseFloat(e.target.value) || 0 };
-                  setForm(updated);
-                  recalc(updated, materials);
-                }}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
-              />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Indian e-com COD average: 8%–15%</span>
+          {/* RTO / Returns Protection (Physical Only) */}
+          {productType === 'physical' && (
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Expected RTO / Customer Return Rate (%)
+                </label>
+                <input
+                  type="number"
+                  value={form.rtoRatePercent}
+                  onChange={(e) => {
+                    const updated = { ...form, rtoRatePercent: parseFloat(e.target.value) || 0 };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Indian e-com COD average: 8%–15%</span>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Average Loss per RTO / Damaged Return (₹)
+                </label>
+                <input
+                  type="number"
+                  value={form.rtoLossPerReturn}
+                  onChange={(e) => {
+                    const updated = { ...form, rtoLossPerReturn: parseFloat(e.target.value) || 0 };
+                    setForm(updated);
+                    recalc(updated, materials);
+                  }}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Unrecoverable reverse courier + scrap pack</span>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Average Loss per RTO / Damaged Return (₹)
-              </label>
-              <input
-                type="number"
-                value={form.rtoLossPerReturn}
-                onChange={(e) => {
-                  const updated = { ...form, rtoLossPerReturn: parseFloat(e.target.value) || 0 };
-                  setForm(updated);
-                  recalc(updated, materials);
-                }}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900"
-              />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Unrecoverable reverse courier + scrap pack</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Section 6: Full GST Operating Center (Input, Output, ITC) */}
@@ -954,6 +1245,154 @@ export default function CalculatorPage() {
               <div className="bg-indigo-600 text-white rounded-xl p-3">
                 <span className="text-[10px] font-bold text-indigo-200 uppercase">True Cost / Unit</span>
                 <div className="text-lg font-black mt-0.5">₹{result.totalCostPerUnit.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* GST Statutory Compliance & Action Plan Card */}
+          <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-3xl p-6 md:p-8 shadow-xl border border-indigo-500/30">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-indigo-800/60">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full mb-2 border border-indigo-400/30">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Indian GST Statutory Compliance & Filing Roadmap</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">
+                  GST Action Plan for {form.productName || 'Your Product'}
+                </h3>
+                <p className="text-xs text-indigo-200 mt-1">
+                  Deterministic statutory compliance roadmap based on {productType === 'digital' ? 'Digital Download / OIDAR Services' : 'Physical Goods'} regulations under CGST & IGST Acts.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/gst-guide"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-indigo-950 hover:bg-indigo-50 px-4 py-2.5 rounded-xl shadow-md transition-colors"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Open Full GST Portal</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+              {/* Statutory Classification */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block mb-1">
+                  Legal Classification
+                </span>
+                <div className="text-base font-black text-white">
+                  {productType === 'digital' ? 'OIDAR Digital Service' : 'Tangible Physical Goods'}
+                </div>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  {productType === 'digital'
+                    ? `SAC ${form.hsnCode || '9984'} (Sec 2(17) IGST)`
+                    : `HSN ${form.hsnCode || '3406'} (Sec 2(52) CGST)`}
+                </span>
+              </div>
+
+              {/* Turnover Threshold */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block mb-1">
+                  Turnover Threshold
+                </span>
+                <div className="text-base font-black text-white">
+                  {productType === 'digital' ? '₹20 Lakhs / Year' : '₹40 Lakhs / Year'}
+                </div>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  {productType === 'digital'
+                    ? 'Services limit (₹10L in NE states)'
+                    : 'Intra-state goods limit (Notfn 10/2019)'}
+                </span>
+              </div>
+
+              {/* Inter-State / Channel Rule */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block mb-1">
+                  Channel & Inter-State Rule
+                </span>
+                <div className="text-base font-black text-amber-300">
+                  {form.channelId === 'amazon' || form.channelId === 'meesho'
+                    ? 'Mandatory GSTIN'
+                    : form.supplyType === 'inter-state'
+                    ? 'Mandatory (Inter-state)'
+                    : 'Exempt Under Limit'}
+                </div>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  {form.channelId === 'amazon'
+                    ? 'Marketplace TCS requires GSTIN (Sec 52)'
+                    : form.supplyType === 'inter-state'
+                    ? 'Section 24(i) removes turnover exemption'
+                    : 'Valid for intra-state D2C / offline sales'}
+                </span>
+              </div>
+
+              {/* E-Way Bill Rule */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block mb-1">
+                  E-Way Bill Requirement
+                </span>
+                <div className="text-base font-black text-emerald-300">
+                  {productType === 'digital' ? '100% Exempt' : 'Mandatory > ₹50,000'}
+                </div>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  {productType === 'digital'
+                    ? 'Rule 138(14) - zero transit paperwork'
+                    : 'Rule 138 consignment threshold'}
+                </span>
+              </div>
+            </div>
+
+            {/* Filing Calendar & Export under LUT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-indigo-800/60 text-xs">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-300 font-bold">
+                  <Receipt className="w-4 h-4 text-indigo-400" />
+                  <span>Statutory Filing Calendar & Penalties</span>
+                </div>
+                <p className="text-slate-300">
+                  • <strong className="text-white">GSTR-1 (Outward Supplies):</strong> File monthly by 11th (or quarterly by 13th under QRMP scheme).
+                </p>
+                <p className="text-slate-300">
+                  • <strong className="text-white">GSTR-3B (Tax Payment):</strong> File monthly by 20th (or 22nd/24th of quarter under QRMP).
+                </p>
+                <p className="text-amber-300">
+                  • <strong className="text-amber-200">Late Fee Penalties:</strong> ₹20/day (NIL returns) or ₹50/day (with tax liability) up to ₹5,000 max cap per return + 18% annual interest under Section 50.
+                </p>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-300 font-bold">
+                  <Globe className="w-4 h-4 text-emerald-400" />
+                  <span>{productType === 'digital' ? 'Zero-Rated Global Export via LUT' : 'Rule 46 Tax Invoice Checklist'}</span>
+                </div>
+                {productType === 'digital' ? (
+                  <>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">Letter of Undertaking (LUT):</strong> Export digital downloads (Gumroad/Etsy/PayPal) to international buyers at <strong className="text-emerald-300">0% GST</strong> without paying upfront IGST.
+                    </p>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">100% ITC Refund:</strong> You can claim full tax refund for input GST paid on software subscriptions (Adobe, Notion, Canva, cloud hosting).
+                    </p>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">FIRC / BRC:</strong> Maintain foreign remittance certificates from Stripe/PayPal as legal export proof.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">Rule 46 Tax Invoice:</strong> Must include 16-character alphanumeric sequential serial number, GSTIN, HSN Code, Customer Shipping Address, and Tax breakups (CGST+SGST or IGST).
+                    </p>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">B2C vs B2B:</strong> For B2C orders under ₹50,000, recipient state name is sufficient. For B2B, buyer GSTIN is mandatory to pass on ITC.
+                    </p>
+                    <p className="text-slate-300">
+                      • <strong className="text-white">Delivery Challan:</strong> Use Rule 55 Delivery Challan for exhibition displays or sample transfers without sale.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

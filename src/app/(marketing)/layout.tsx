@@ -32,19 +32,25 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
             <Link href="/#how-it-works" className="hover:text-indigo-600 transition-colors">
               How It Works
             </Link>
             <Link href="/features" className="hover:text-indigo-600 transition-colors">
               Features
             </Link>
+            <Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">
+              GST & HSN Guide
+            </Link>
+            <Link href="/compare" className="hover:text-indigo-600 transition-colors">
+              Compare Couriers
+            </Link>
             <Link href="/pricing" className="hover:text-indigo-600 transition-colors">
               Pricing
             </Link>
             <Link href="/calculator" className="flex items-center gap-1.5 text-indigo-600 font-bold hover:text-indigo-700 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
               <Calculator className="w-4 h-4" />
-              <span>Interactive Calculator</span>
+              <span>Studio Calculator</span>
             </Link>
           </nav>
 
@@ -96,6 +102,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Product</h4>
               <ul className="space-y-2.5 text-sm text-slate-600 font-medium">
                 <li><Link href="/calculator" className="hover:text-indigo-600 transition-colors">Live Batch Calculator</Link></li>
+                <li><Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">GST & HSN Guide</Link></li>
+                <li><Link href="/compare" className="hover:text-indigo-600 transition-colors">Compare Couriers & Platforms</Link></li>
                 <li><Link href="/features" className="hover:text-indigo-600 transition-colors">Features & Capabilities</Link></li>
                 <li><Link href="/pricing" className="hover:text-indigo-600 transition-colors">Pricing & Plans</Link></li>
                 <li><Link href="/dashboard" className="hover:text-indigo-600 transition-colors">Studio Workspace</Link></li>

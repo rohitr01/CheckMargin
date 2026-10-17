@@ -68,6 +68,24 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
     notes: 'Direct in-person sales (no gateway/shipping)',
   },
   {
+    id: 'gumroad',
+    name: 'Gumroad (Digital Products / Global)',
+    feePercent: 10,
+    fixedFee: 0,
+    shipping: 0,
+    gstOnFeesPercent: 18,
+    notes: '10% flat platform fee + gateway fee, instant digital download delivery',
+  },
+  {
+    id: 'instamojo',
+    name: 'Instamojo Digital (Domestic)',
+    feePercent: 5,
+    fixedFee: 3,
+    shipping: 0,
+    gstOnFeesPercent: 18,
+    notes: '5% platform fee + ₹3 flat fee for digital file delivery',
+  },
+  {
     id: 'custom',
     name: 'Custom Channel',
     feePercent: 0,
@@ -80,6 +98,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
 
 export interface BatchInput {
   productName: string;
+  productType?: 'physical' | 'digital';
   hsnCode?: string;         // e.g. '3406'
   materials: Material[];
   batchSize: number;        // total units made

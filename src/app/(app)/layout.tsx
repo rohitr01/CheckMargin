@@ -7,12 +7,16 @@ import {
   ArrowLeft,
   ShieldCheck,
   PlusCircle,
+  Receipt,
+  Truck,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Workspace Dashboard' },
   { href: '/calculator', icon: Calculator, label: 'Batch Calculator' },
   { href: '/products', icon: Package, label: 'Saved Products' },
+  { href: '/gst-guide', icon: Receipt, label: 'GST & HSN Guide' },
+  { href: '/compare', icon: Truck, label: 'Compare Couriers' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
