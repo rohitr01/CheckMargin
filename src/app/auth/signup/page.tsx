@@ -11,7 +11,7 @@ export default function SignupPage() {
             <Calculator className="w-5 h-5" />
           </div>
           <span className="text-xl font-black text-slate-900">
-            Maker<span className="text-indigo-600">Margin</span>
+            Check<span className="text-indigo-600">Margin</span>
           </span>
         </Link>
 

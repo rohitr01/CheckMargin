@@ -28,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div>
               <span className="text-lg font-black tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
-                Maker<span className="text-indigo-600">Margin</span>
+                Check<span className="text-indigo-600">Margin</span>
               </span>
               <span className="text-[10px] font-bold text-slate-400 block -mt-1 uppercase tracking-wider">
                 App Studio
@@ -75,7 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span>Back to Public Site</span>
           </Link>
           <div className="text-[11px] text-slate-400 space-y-1">
-            <p className="font-semibold text-slate-500">MakerMargin v1.0 Production</p>
+            <p className="font-semibold text-slate-500">CheckMargin v1.0 Production</p>
             <p>Formulas verified against hand-calculated ground truth.</p>
           </div>
         </div>
@@ -85,9 +85,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-black text-slate-900">
           <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
-            MM
+            CM
           </div>
-          <span>MakerMargin</span>
+          <span>CheckMargin</span>
         </Link>
         <div className="flex items-center gap-2">
           {navItems.map((item) => {

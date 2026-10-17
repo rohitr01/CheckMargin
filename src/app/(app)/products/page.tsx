@@ -53,7 +53,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('makermargin_products');
+      const stored = localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products');
       if (stored) {
         const parsed: SavedProduct[] = JSON.parse(stored);
         if (parsed.length > 0) {
@@ -69,9 +69,9 @@ export default function ProductsPage() {
     const updated = products.filter((p) => p.id !== id);
     setProducts(updated);
     try {
-      const stored = JSON.parse(localStorage.getItem('makermargin_products') || '[]');
+      const stored = JSON.parse(localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products') || '[]');
       const filtered = stored.filter((p: any) => p.id !== id);
-      localStorage.setItem('makermargin_products', JSON.stringify(filtered));
+      localStorage.setItem('checkmargin_products', JSON.stringify(filtered));
     } catch {
       // ignore
     }

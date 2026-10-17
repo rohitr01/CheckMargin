@@ -19,7 +19,7 @@ const featureCategories = [
     items: [
       {
         title: 'Wholesale Pack Proportions',
-        desc: 'Enter what you paid per 1kg, 5L, or 100-pack. MakerMargin computes the exact fraction used in grams, ml, or pieces.',
+        desc: 'Enter what you paid per 1kg, 5L, or 100-pack. CheckMargin computes the exact fraction used in grams, ml, or pieces.',
       },
       {
         title: 'True Saleable Yield Accounting',
@@ -40,13 +40,21 @@ const featureCategories = [
     ],
   },
   {
-    category: 'Strategic Pricing Scenarios',
+    category: 'Strategic Pricing Scenarios & Wholesale (B2B)',
     icon: Sliders,
-    desc: 'Never confuse markup with margin again. Set prices that withstand real marketplace deductions.',
+    desc: 'Never confuse markup with margin again. Set prices that withstand real marketplace deductions and wholesale buyer terms.',
     items: [
       {
         title: 'Markup vs Target Margin Clarity',
-        desc: 'A 50% markup on a ₹100 cost gives a ₹150 price (33% margin). MakerMargin explains both models in plain language.',
+        desc: 'A 50% markup on a ₹100 cost gives a ₹150 price (33% margin). CheckMargin explains both models in plain language.',
+      },
+      {
+        title: 'Wholesale vs Retail Tier Matrix',
+        desc: 'Simulate B2B wholesale prices (2× cost) vs retail MSRP (4× cost) to ensure 50% margin for both you and your stockists.',
+      },
+      {
+        title: 'MOQ Cash Flow & Gross Profit',
+        desc: 'Calculate total order value and gross cash generated from Minimum Order Quantity runs.',
       },
       {
         title: 'Marketplace & Gateway Fee Deduction',
@@ -59,17 +67,21 @@ const featureCategories = [
     ],
   },
   {
-    category: 'Production & Material Planning',
+    category: 'Production Planning & 1-Click Batch Scaler',
     icon: ShoppingBag,
-    desc: 'Translate orders into concrete, actionable wholesale procurement lists.',
+    desc: 'Translate orders into concrete, actionable wholesale procurement lists with economies of scale.',
     items: [
+      {
+        title: '1-Click Batch Multiplier (2x, 5x, 10x)',
+        desc: 'Scale recipes up instantly with realistic labour efficiency curves — see cost per unit drop as production expands.',
+      },
       {
         title: 'Target Run Shopping List',
         desc: 'Enter your upcoming target batch volume and get an exact breakdown of grams, litres, and units required.',
       },
       {
         title: 'Pack-Size Upward Rounding',
-        desc: 'Suppliers don’t sell 340g of wax; they sell 1kg blocks. MakerMargin calculates the exact packs to buy and cash required.',
+        desc: 'Suppliers don’t sell 340g of wax; they sell 1kg blocks. CheckMargin calculates the exact packs to buy and cash required.',
       },
     ],
   },

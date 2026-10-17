@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'MakerMargin — Know Your True Cost',
+  title: 'CheckMargin — Precision Batch Costing & Profit Operating System',
   description:
-    'MakerMargin is a batch costing toolkit for small product businesses. Candle makers, soap makers, bakers, resin artists, cosmetics brands and more. Calculate your true cost per unit including wastage, labour, packaging, and platform fees.',
+    'CheckMargin is an advanced batch costing operating system for small-batch product businesses. Candle makers, soap makers, bakers, resin artists, cosmetics brands and small manufacturers. Calculate true cost per unit including scrap, labour, packaging, marketplace commissions, and Indian GST reconciliation.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-900`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900`}>
         {children}
       </body>
     </html>

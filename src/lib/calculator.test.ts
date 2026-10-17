@@ -1,5 +1,12 @@
 // Unit tests for the upgraded CheckMargin calculation engine
-import { calculateBatchCost, suggestPrices, generateShoppingList, type BatchInput } from './calculator';
+import {
+  calculateBatchCost,
+  suggestPrices,
+  generateShoppingList,
+  calculateWholesaleTiers,
+  scaleBatch,
+  type BatchInput,
+} from './calculator';
 
 const sampleInput: BatchInput = {
   productName: 'Handcrafted Soy Jar Candle (200g)',
@@ -76,4 +83,18 @@ console.log('✅ Monthly Break-Even Units:', result.breakEvenUnitsPerMonth, 'uni
 const shoppingList = generateShoppingList(sampleInput.materials, 30, 9, 10);
 console.log('✅ Shopping List Items for 30 units:', shoppingList.length);
 
+// Test 8: Wholesale Pricing Tiers
+const wholesale = calculateWholesaleTiers(result.totalDirectCostPerUnit, 599, 25);
+console.assert(wholesale.wholesalePrice > result.totalDirectCostPerUnit, '❌ Wholesale price should exceed direct cost');
+console.assert(wholesale.tiers.length === 3, '❌ Should have 3 wholesale tiers');
+console.log('✅ Wholesale Price (2x Cost): ₹', wholesale.wholesalePrice, `(Margin: ${wholesale.makerMarginPercent.toFixed(1)}%)`);
+console.log('✅ MOQ 25 Gross Profit: ₹', wholesale.moqGrossProfit);
+
+// Test 9: Batch Scaler with Labour Efficiency
+const scaled5x = scaleBatch(sampleInput, result, 5);
+console.assert(scaled5x.batchSize === 50, '❌ 5x batch size should be 50');
+console.assert(scaled5x.savingsPerUnit > 0, '❌ Scaling up should produce per-unit savings from labour efficiency');
+console.log('✅ 5x Batch Cost/Unit: ₹', scaled5x.costPerSaleableUnit, `(Savings: ₹${scaled5x.savingsPerUnit}/unit or ${scaled5x.savingsPercent}%)`);
+
 console.log('\n🎉 All advanced calculation and GST tests passed successfully!');
+

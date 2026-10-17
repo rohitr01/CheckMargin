@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import HeroMiniCalculator from '@/components/HeroMiniCalculator';
 import {
   Calculator,
   ArrowRight,
@@ -75,7 +76,7 @@ export default function HomePage() {
 
           {/* Subtitle */}
           <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            MakerMargin calculates the true cost per saleable unit for batch products — accounting for raw materials,
+            CheckMargin calculates the true cost per saleable unit for batch products — accounting for raw materials,
             production waste, failed batches, direct labour, packaging, and marketplace fees.
           </p>
 
@@ -99,7 +100,7 @@ export default function HomePage() {
           </div>
 
           {/* Trust points */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-semibold text-slate-500">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-semibold text-slate-500">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>No credit card required</span>
@@ -113,6 +114,11 @@ export default function HomePage() {
               <span>Includes GST & Marketplace fees</span>
             </div>
           </div>
+
+          {/* Interactive Hero Simulator */}
+          <div className="mt-14">
+            <HeroMiniCalculator />
+          </div>
         </div>
       </section>
 
@@ -121,7 +127,7 @@ export default function HomePage() {
         <div className="text-center max-w-3xl mx-auto mb-14">
           <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2">Designed For All Small-Batch Products</div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            If you make products in batches, MakerMargin was built for you
+            If you make products in batches, CheckMargin was built for you
           </h2>
           <p className="mt-3 text-slate-600">
             Whether you blend, pour, bake, cast, sew, or assemble — recipe-to-batch costing gives you the clarity generic spreadsheets never can.
@@ -142,7 +148,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Comparison: Mental Math vs MakerMargin Reality */}
+      {/* Comparison: Mental Math vs CheckMargin Reality */}
       <section className="py-20 bg-slate-100/70 border-y border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -159,7 +165,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Without MakerMargin */}
+            {/* Without CheckMargin */}
             <div className="bg-white border-2 border-rose-200 rounded-3xl p-8 shadow-sm">
               <div className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 text-xs font-bold px-3 py-1 rounded-full mb-6">
                 <span>❌ The Naive Calculator Trap</span>
@@ -200,11 +206,11 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* With MakerMargin */}
+            {/* With CheckMargin */}
             <div className="bg-white border-2 border-indigo-500 rounded-3xl p-8 shadow-lg shadow-indigo-500/10 relative">
               <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-6">
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
-                <span>✅ MakerMargin True Economics</span>
+                <span>✅ CheckMargin True Economics</span>
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-4">The verified truth:</h3>
               <ul className="space-y-3 text-sm text-slate-600 mb-6">
@@ -250,7 +256,7 @@ export default function HomePage() {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2">Simplicity & Speed</div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            How MakerMargin works in 4 simple steps
+            How CheckMargin works in 4 simple steps
           </h2>
         </div>
 

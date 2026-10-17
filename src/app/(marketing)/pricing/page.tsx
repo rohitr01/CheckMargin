@@ -160,7 +160,7 @@ export default function PricingPage() {
           <div>
             <h4 className="font-bold text-slate-900 mb-2">How does recipe-to-batch costing work?</h4>
             <p className="text-slate-600 text-xs leading-relaxed">
-              Unlike generic calculators, you enter wholesale pack sizes (e.g. ₹850 for 1kg wax) and batch quantities (150g). MakerMargin calculates the true proportional cost per unit based on saleable yield.
+              Unlike generic calculators, you enter wholesale pack sizes (e.g. ₹850 for 1kg wax) and batch quantities (150g). CheckMargin calculates the true proportional cost per unit based on saleable yield.
             </p>
           </div>
           <div>
@@ -172,7 +172,7 @@ export default function PricingPage() {
           <div>
             <h4 className="font-bold text-slate-900 mb-2">Is GST advice included?</h4>
             <p className="text-slate-600 text-xs leading-relaxed">
-              MakerMargin provides mathematical GST separation (taxable value vs GST collected), but is an operational tool and not tax or accounting advice. Always consult your CA.
+              CheckMargin provides mathematical GST separation (taxable value vs GST collected), but is an operational tool and not tax or accounting advice. Always consult your CA.
             </p>
           </div>
         </div>

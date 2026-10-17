@@ -438,3 +438,238 @@ export function generateShoppingList(
     };
   });
 }
+
+export interface WholesaleTier {
+  name: string;
+  description: string;
+  multiplier: number; // multiplier on direct cost
+  price: number;
+  profitPerUnit: number;
+  marginPercent: number;
+  recommendedFor: string;
+}
+
+export interface WholesaleCalculation {
+  directCostPerUnit: number;
+  suggestedMSRP: number;
+  wholesalePrice: number; // 2x direct cost
+  makerGrossProfitPerUnit: number;
+  makerMarginPercent: number;
+  retailerMarginPercent: number; // if retailer sells at MSRP
+  suggestedMOQ: number;
+  moqOrderValue: number;
+  moqGrossProfit: number;
+  tiers: WholesaleTier[];
+}
+
+/**
+ * Calculates wholesale (B2B), distributor, and retail MSRP tiers with MOQ economics
+ */
+export function calculateWholesaleTiers(
+  directCostPerUnit: number,
+  targetMSRP?: number,
+  customMOQ: number = 20
+): WholesaleCalculation {
+  const cost = Math.max(directCostPerUnit, 0.01);
+  const wholesalePrice = Math.round(cost * 2 * 100) / 100; // 50% margin to maker
+  const suggestedMSRP = targetMSRP && targetMSRP > wholesalePrice 
+    ? targetMSRP 
+    : Math.round(wholesalePrice * 2 * 100) / 100; // 50% margin to retailer (4x cost)
+
+  const makerGrossProfitPerUnit = wholesalePrice - cost;
+  const makerMarginPercent = (makerGrossProfitPerUnit / wholesalePrice) * 100;
+  const retailerMarginPercent = suggestedMSRP > 0 
+    ? ((suggestedMSRP - wholesalePrice) / suggestedMSRP) * 100 
+    : 0;
+
+  const moq = Math.max(customMOQ, 1);
+  const moqOrderValue = Math.round(wholesalePrice * moq * 100) / 100;
+  const moqGrossProfit = Math.round(makerGrossProfitPerUnit * moq * 100) / 100;
+
+  const tiers: WholesaleTier[] = [
+    {
+      name: 'Bulk Stockist / Distributor',
+      description: 'High volume wholesale orders (50+ units)',
+      multiplier: 1.6,
+      price: Math.round(cost * 1.6 * 100) / 100,
+      profitPerUnit: Math.round((cost * 1.6 - cost) * 100) / 100,
+      marginPercent: Math.round(((cost * 1.6 - cost) / (cost * 1.6)) * 1000) / 10,
+      recommendedFor: 'Distributors, large retail chains, corporate gifting',
+    },
+    {
+      name: 'Standard Wholesale (B2B)',
+      description: 'Standard boutique & gift shop rate (2× Direct Cost)',
+      multiplier: 2.0,
+      price: wholesalePrice,
+      profitPerUnit: Math.round(makerGrossProfitPerUnit * 100) / 100,
+      marginPercent: Math.round(makerMarginPercent * 10) / 10,
+      recommendedFor: 'Independent boutiques, cafes, curated concept stores',
+    },
+    {
+      name: 'Direct to Consumer (D2C / MSRP)',
+      description: 'Standard retail price on website or marketplaces (4× Cost)',
+      multiplier: Math.round((suggestedMSRP / cost) * 100) / 100,
+      price: suggestedMSRP,
+      profitPerUnit: Math.round((suggestedMSRP - cost) * 100) / 100,
+      marginPercent: Math.round(((suggestedMSRP - cost) / suggestedMSRP) * 1000) / 10,
+      recommendedFor: 'Own e-commerce site, pop-ups, flea markets, Amazon',
+    },
+  ];
+
+  return {
+    directCostPerUnit: cost,
+    suggestedMSRP,
+    wholesalePrice,
+    makerGrossProfitPerUnit,
+    makerMarginPercent,
+    retailerMarginPercent,
+    suggestedMOQ: moq,
+    moqOrderValue,
+    moqGrossProfit,
+    tiers,
+  };
+}
+
+export interface ScaledBatchSummary {
+  multiplier: number;
+  batchSize: number;
+  saleableYield: number;
+  totalMaterialCost: number;
+  labourMinutes: number;
+  labourCost: number;
+  packagingCost: number;
+  overheadCost: number;
+  totalDirectBatchCost: number;
+  costPerSaleableUnit: number;
+  savingsPerUnit: number;
+  savingsPercent: number;
+}
+
+/**
+ * Simulates scaling a batch up (e.g. 2x, 5x, 10x) with realistic labour efficiency curves
+ */
+export function scaleBatch(
+  baseInput: BatchInput,
+  baseResult: CalculationResult,
+  multiplier: number
+): ScaledBatchSummary {
+  const mult = Math.max(multiplier, 1);
+  const scaledBatchSize = Math.round(baseInput.batchSize * mult);
+  const scrapRate = baseInput.batchSize > 0 ? baseInput.failedUnits / baseInput.batchSize : 0;
+  const scaledFailedUnits = Math.round(scaledBatchSize * scrapRate);
+  const scaledYield = Math.max(scaledBatchSize - scaledFailedUnits, 1);
+
+  // Materials scale linearly
+  const scaledMaterialCost = baseResult.totalMaterialCost * mult;
+
+  // Labour exhibits economies of scale: setup and prep time are fixed,
+  // so scaling by M typically takes M^0.80 time rather than M^1.0 time.
+  const labourEfficiencyFactor = Math.pow(mult, 0.78);
+  const scaledLabourMinutes = Math.round(baseInput.labourMinutes * labourEfficiencyFactor);
+  const scaledLabourCost = (scaledLabourMinutes / 60) * baseInput.labourHourlyRate;
+
+  // Packaging scales linearly with saleable units
+  const scaledPackagingCost = baseInput.packagingPerUnit * scaledYield;
+
+  // Overhead has both fixed and variable portions: studio rent is fixed, electricity/tools increase slightly
+  const scaledOverheadCost = baseInput.overheadPerBatch * Math.pow(mult, 0.5);
+
+  const totalDirectBatchCost =
+    scaledMaterialCost + scaledLabourCost + scaledPackagingCost + scaledOverheadCost;
+  const costPerSaleableUnit = totalDirectBatchCost / scaledYield;
+
+  const baseCost = baseResult.totalDirectCostPerUnit;
+  const savingsPerUnit = Math.max(0, baseCost - costPerSaleableUnit);
+  const savingsPercent = baseCost > 0 ? (savingsPerUnit / baseCost) * 100 : 0;
+
+  return {
+    multiplier: mult,
+    batchSize: scaledBatchSize,
+    saleableYield: scaledYield,
+    totalMaterialCost: Math.round(scaledMaterialCost * 100) / 100,
+    labourMinutes: scaledLabourMinutes,
+    labourCost: Math.round(scaledLabourCost * 100) / 100,
+    packagingCost: Math.round(scaledPackagingCost * 100) / 100,
+    overheadCost: Math.round(scaledOverheadCost * 100) / 100,
+    totalDirectBatchCost: Math.round(totalDirectBatchCost * 100) / 100,
+    costPerSaleableUnit: Math.round(costPerSaleableUnit * 100) / 100,
+    savingsPerUnit: Math.round(savingsPerUnit * 100) / 100,
+    savingsPercent: Math.round(savingsPercent * 10) / 10,
+  };
+}
+
+export interface HSNGuideItem {
+  hsnCode: string;
+  productCategory: string;
+  gstRatePercent: number;
+  applicableItems: string[];
+  itcEligibility: string;
+  notes2025: string;
+}
+
+export const HSN_DIRECTORY: HSNGuideItem[] = [
+  {
+    hsnCode: '3406',
+    productCategory: 'Candles, Tapres & Wax Melts',
+    gstRatePercent: 5,
+    applicableItems: ['Soy wax jars', 'Beeswax pillar candles', 'Scented wax melts', 'Tea-light candles'],
+    itcEligibility: 'Eligible (Full ITC on wax, fragrance oils, wicks, and jars)',
+    notes2025: 'Concessional craft rate under 5% slab. Input raw materials often attract 18%, creating an accumulated ITC position.',
+  },
+  {
+    hsnCode: '3401',
+    productCategory: 'Soaps & Cleansing Bars',
+    gstRatePercent: 5,
+    applicableItems: ['Handcrafted cold process soap', 'Goat milk soap bars', 'Glycerin melt & pour', 'Shampoo bars'],
+    itcEligibility: 'Eligible (Full ITC on caustic soda, plant oils, butters, and packaging)',
+    notes2025: 'Bath and toilet soap bars attract 5%. Medicated or specialty soaps may fall under 18%.',
+  },
+  {
+    hsnCode: '1905',
+    productCategory: 'Artisanal Bakery & Food',
+    gstRatePercent: 5,
+    applicableItems: ['Breads, sourdough loaves', 'Biscuits, cookies, rusks', 'Cakes, pastries, babkas'],
+    itcEligibility: 'Eligible (Requires registered supplier tax invoices on flour, dairy, chocolate)',
+    notes2025: 'Plain unbranded bread is 0% exempt. Artisanal branded cookies, cakes, and loaves attract 5%.',
+  },
+  {
+    hsnCode: '3304',
+    productCategory: 'Cosmetics, Skincare & Serums',
+    gstRatePercent: 18,
+    applicableItems: ['Face serums, facial oils', 'Body lotions, body butters', 'Lip balms, lip tints', 'Face masks, clay scrubs'],
+    itcEligibility: 'Eligible (ITC claimable on essential oils, carrier oils, glass dropper bottles)',
+    notes2025: 'Standard 18% beauty and skincare slab across India.',
+  },
+  {
+    hsnCode: '3926',
+    productCategory: 'Resin Art & Cast Polymer Decor',
+    gstRatePercent: 18,
+    applicableItems: ['Epoxy resin coasters', 'Resin wall clocks, ocean trays', 'Polymer clay jewelry', 'Silicone molded decor'],
+    itcEligibility: 'Eligible (ITC on epoxy resin, hardener, alcohol inks, mica powders)',
+    notes2025: 'Classified under articles of plastics/polymers (18%).',
+  },
+  {
+    hsnCode: '6815',
+    productCategory: 'Jesmonite, Cement & Plaster Decor',
+    gstRatePercent: 18,
+    applicableItems: ['Jesmonite AC100 trays', 'Concrete planters', 'Plaster trinket dishes', 'Mineral casting homeware'],
+    itcEligibility: 'Eligible (ITC on base mineral powder, acrylic liquids, pigments, sealers)',
+    notes2025: 'Classified under articles of stone, plaster, or cement not elsewhere specified (18%).',
+  },
+  {
+    hsnCode: '6204 / 6101',
+    productCategory: 'Apparel & Handmade Textiles',
+    gstRatePercent: 5,
+    applicableItems: ['Handmade cotton dresses', 'Tote bags, scrunchies', 'Embroidered shirts', 'Linen kitchen aprons'],
+    itcEligibility: 'Eligible (ITC on fabric, embroidery threads, buttons, packaging)',
+    notes2025: '5% for garments with sale value <= ₹1,000; 12% for garments with sale value > ₹1,000.',
+  },
+  {
+    hsnCode: '6912',
+    productCategory: 'Ceramic Pottery & Tableware',
+    gstRatePercent: 12,
+    applicableItems: ['Wheel-thrown ceramic mugs', 'Handmade ceramic bowls', 'Stoneware plates', 'Studio pottery vases'],
+    itcEligibility: 'Eligible (ITC on ceramic clay, glazes, kiln firing electricity)',
+    notes2025: 'Ceramic tableware and kitchenware classified under the 12% GST slab.',
+  },
+];

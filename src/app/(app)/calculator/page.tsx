@@ -5,8 +5,11 @@ import {
   calculateBatchCost,
   suggestPrices,
   generateShoppingList,
-  BatchInput,
-  CalculationResult,
+  calculateWholesaleTiers,
+  scaleBatch,
+  HSN_DIRECTORY,
+  type BatchInput,
+  type CalculationResult,
   CHANNEL_PRESETS,
 } from '@/lib/calculator';
 import {
@@ -32,6 +35,13 @@ import {
   Store,
   DollarSign,
   Percent,
+  Building2,
+  Scale,
+  BookOpen,
+  X,
+  Search,
+  Zap,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 const HSN_PRESETS = [
@@ -84,6 +94,10 @@ export default function CalculatorPage() {
   const [materials, setMaterials] = useState(INITIAL_MATERIALS);
   const [form, setForm] = useState<BatchInput>(INITIAL_FORM);
   const [targetUnits, setTargetUnits] = useState(30);
+  const [wholesaleMOQ, setWholesaleMOQ] = useState(25);
+  const [scaleMultiplier, setScaleMultiplier] = useState(5);
+  const [isHSNModalOpen, setIsHSNModalOpen] = useState(false);
+  const [hsnSearch, setHsnSearch] = useState('');
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
@@ -149,7 +163,7 @@ export default function CalculatorPage() {
   function handleSaveProduct() {
     if (!result) return;
     try {
-      const savedList = JSON.parse(localStorage.getItem('makermargin_products') || '[]');
+      const savedList = JSON.parse(localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products') || '[]');
       const newEntry = {
         id: Date.now().toString(),
         title: form.productName,
@@ -161,7 +175,7 @@ export default function CalculatorPage() {
         date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
       };
       savedList.unshift(newEntry);
-      localStorage.setItem('makermargin_products', JSON.stringify(savedList));
+      localStorage.setItem('checkmargin_products', JSON.stringify(savedList));
       setSaveMessage('✅ Product successfully saved to library!');
       setTimeout(() => setSaveMessage(''), 4000);
     } catch {
@@ -394,7 +408,7 @@ export default function CalculatorPage() {
           </div>
 
           <p className="text-xs text-slate-500 mb-6">
-            Enter wholesale pack purchase price and size. MakerMargin extracts the exact batch fraction and isolates the Input GST paid for tax credit (ITC) reconciliation.
+            Enter wholesale pack purchase price and size. CheckMargin extracts the exact batch fraction and isolates the Input GST paid for tax credit (ITC) reconciliation.
           </p>
 
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
@@ -754,9 +768,19 @@ export default function CalculatorPage() {
 
         {/* Section 6: Full GST Operating Center (Input, Output, ITC) */}
         <div className="bg-white border-2 border-indigo-200 rounded-3xl p-6 md:p-8 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <Receipt className="w-5 h-5 text-indigo-600" />
-            <h2 className="font-bold text-slate-900 text-lg">Indian GST Operating Center & ITC Reconciliation</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-indigo-600" />
+              <h2 className="font-bold text-slate-900 text-lg">Indian GST Operating Center & ITC Reconciliation</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsHSNModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition-colors cursor-pointer w-fit"
+            >
+              <BookOpen className="w-4 h-4 text-indigo-600" />
+              <span>Explore Craft GST & HSN Directory</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mb-6">
@@ -972,6 +996,211 @@ export default function CalculatorPage() {
             </div>
           </div>
 
+          {/* Section: Wholesale vs Retail Tier Matrix (B2B vs D2C) */}
+          {result && (() => {
+            const wholesale = calculateWholesaleTiers(result.totalDirectCostPerUnit, form.sellingPrice, wholesaleMOQ);
+            return (
+              <div className="bg-white border-2 border-indigo-100 rounded-3xl p-6 md:p-8 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-indigo-600" />
+                      <h3 className="text-xl font-black text-slate-900">
+                        Wholesale (B2B) vs Retail (D2C) Pricing Matrix
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      The craft pricing benchmark: <strong className="text-slate-700">Cost × 2 = Wholesale</strong> (50% Maker margin) and <strong className="text-slate-700">Wholesale × 2 = MSRP</strong> (50% Retailer margin).
+                    </p>
+                  </div>
+
+                  {/* MOQ Controller */}
+                  <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3.5 py-2">
+                    <span className="text-xs font-bold text-indigo-900">Minimum Order Qty (MOQ):</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={wholesaleMOQ}
+                      onChange={(e) => setWholesaleMOQ(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 bg-white border border-indigo-300 rounded-lg px-2 py-1 text-xs font-black text-center text-indigo-700 shadow-xs"
+                    />
+                    <span className="text-xs font-semibold text-indigo-600">units</span>
+                  </div>
+                </div>
+
+                {/* Wholesale KPI cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Direct Cost / Unit
+                    </span>
+                    <span className="text-xl font-black text-slate-900">
+                      ₹{wholesale.directCostPerUnit.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Base floor to make</span>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-200">
+                    <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">
+                      Wholesale Price (2×)
+                    </span>
+                    <span className="text-xl font-black text-indigo-700">
+                      ₹{wholesale.wholesalePrice.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] text-indigo-600 block mt-0.5 font-semibold">
+                      +{wholesale.makerMarginPercent.toFixed(1)}% Maker margin
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200">
+                    <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block mb-1">
+                      Retail MSRP (4×)
+                    </span>
+                    <span className="text-xl font-black text-purple-900">
+                      ₹{wholesale.suggestedMSRP.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] text-purple-600 block mt-0.5 font-semibold">
+                      +{wholesale.retailerMarginPercent.toFixed(1)}% Stockist margin
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                      MOQ Gross Profit ({wholesale.suggestedMOQ} units)
+                    </span>
+                    <span className="text-xl font-black text-emerald-700">
+                      ₹{wholesale.moqGrossProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 block mt-0.5 font-semibold">
+                      Order Value: ₹{wholesale.moqOrderValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Wholesale Tiers Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        <th className="pb-3">Channel / Tier</th>
+                        <th className="pb-3">Multiplier</th>
+                        <th className="pb-3">Unit Price</th>
+                        <th className="pb-3">Your Profit / Unit</th>
+                        <th className="pb-3">Your Margin %</th>
+                        <th className="pb-3">Recommended For</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {wholesale.tiers.map((t, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 font-bold text-slate-900">
+                            <div>{t.name}</div>
+                            <div className="text-[11px] text-slate-400 font-normal">{t.description}</div>
+                          </td>
+                          <td className="py-3 font-bold text-indigo-600">{t.multiplier}×</td>
+                          <td className="py-3 text-base font-black text-slate-900">₹{t.price.toFixed(2)}</td>
+                          <td className="py-3 font-bold text-emerald-700">₹{t.profitPerUnit.toFixed(2)}</td>
+                          <td className="py-3 font-semibold text-slate-700">{t.marginPercent.toFixed(1)}%</td>
+                          <td className="py-3 text-xs text-slate-500">{t.recommendedFor}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Section: 1-Click Batch Multiplier & Scaler Tool */}
+          {result && (() => {
+            const scaled = scaleBatch(form, result, scaleMultiplier);
+            return (
+              <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-5 h-5 text-indigo-600" />
+                      <h3 className="text-xl font-black text-slate-900">
+                        1-Click Batch Multiplier & Labour Efficiency Scaler
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      See how scaling up production from {form.batchSize} units to {scaled.batchSize} units reduces direct cost per unit via economies of scale.
+                    </p>
+                  </div>
+
+                  {/* Multiplier Presets */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                    {[1, 2, 5, 10, 25].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setScaleMultiplier(m)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          scaleMultiplier === m
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                        }`}
+                      >
+                        {m}×
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Scaled Batch</span>
+                    <div className="text-base font-black text-slate-900 mt-0.5">{scaled.batchSize} units</div>
+                    <span className="text-[10px] text-slate-500">Yield: {scaled.saleableYield} units</span>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Bulk Material Spend</span>
+                    <div className="text-base font-black text-slate-900 mt-0.5">₹{scaled.totalMaterialCost.toFixed(0)}</div>
+                    <span className="text-[10px] text-slate-500">Linear scaling</span>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Craft Labour</span>
+                    <div className="text-base font-black text-slate-900 mt-0.5">{scaled.labourMinutes} mins</div>
+                    <span className="text-[10px] text-emerald-600 font-semibold">Prep efficiency curve</span>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Total Run Cost</span>
+                    <div className="text-base font-black text-slate-900 mt-0.5">₹{scaled.totalDirectBatchCost.toFixed(0)}</div>
+                    <span className="text-[10px] text-slate-500">Direct production</span>
+                  </div>
+
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-indigo-700 uppercase">New Cost / Unit</span>
+                    <div className="text-lg font-black text-indigo-700 mt-0.5">₹{scaled.costPerSaleableUnit.toFixed(2)}</div>
+                    <span className="text-[10px] text-slate-400 line-through">Base: ₹{result.totalDirectCostPerUnit.toFixed(2)}</span>
+                  </div>
+
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase">Savings / Unit</span>
+                    <div className="text-lg font-black text-emerald-700 mt-0.5">₹{scaled.savingsPerUnit.toFixed(2)}</div>
+                    <span className="text-[10px] text-emerald-600 font-bold">-{scaled.savingsPercent.toFixed(1)}% reduction</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span>
+                      At {scaleMultiplier}× batch size, you save <strong className="text-slate-900">₹{(scaled.savingsPerUnit * scaled.saleableYield).toFixed(2)}</strong> across the production run thanks to setup consolidation.
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-indigo-600 hidden sm:inline">
+                    Higher Profit Margin Unlocked
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Ready-to-Order Bulk Shopping List */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -1030,6 +1259,120 @@ export default function CalculatorPage() {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Indian GST & HSN Reference Directory Modal */}
+      {isHSNModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in duration-150">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">Indian Craft GST & HSN Directory</h3>
+                  <p className="text-xs text-slate-500">Official classification rates and Input Tax Credit (ITC) rules for makers</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHSNModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-4 border-b border-slate-100 bg-white">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search HSN code, product category (e.g. candle, soap, resin, bakery, apparel)..."
+                  value={hsnSearch}
+                  onChange={(e) => setHsnSearch(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            {/* Modal Body List */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {HSN_DIRECTORY.filter((item) => {
+                const q = hsnSearch.toLowerCase();
+                return (
+                  item.hsnCode.toLowerCase().includes(q) ||
+                  item.productCategory.toLowerCase().includes(q) ||
+                  item.applicableItems.some((it) => it.toLowerCase().includes(q))
+                );
+              }).map((item) => (
+                <div
+                  key={item.hsnCode}
+                  className="border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all space-y-2.5"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200">
+                        HSN {item.hsnCode}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-sm">{item.productCategory}</h4>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-xs px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800">
+                        {item.gstRatePercent}% GST
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = {
+                            ...form,
+                            hsnCode: item.hsnCode.split('/')[0].trim(),
+                            outputGSTRatePercent: item.gstRatePercent,
+                          };
+                          setForm(updated);
+                          recalc(updated, materials);
+                          setIsHSNModalOpen(false);
+                        }}
+                        className="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Apply to Form
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {item.applicableItems.map((sub, i) => (
+                      <span key={i} className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="text-xs space-y-1 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p><strong className="text-slate-800">ITC Rule:</strong> {item.itcEligibility}</p>
+                    <p className="text-slate-500 text-[11px]"><strong className="text-slate-700">2025 Notes:</strong> {item.notes2025}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+              <span>⚠️ For formal GST filing and tax advice, always consult your Chartered Accountant (CA).</span>
+              <button
+                type="button"
+                onClick={() => setIsHSNModalOpen(false)}
+                className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl font-bold text-slate-700 cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

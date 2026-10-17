@@ -21,7 +21,7 @@ export default function DashboardPage() {
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>Batch Costing Workspace</span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">Welcome to MakerMargin Studio</h1>
+          <h1 className="text-3xl font-black tracking-tight mb-2">Welcome to CheckMargin Studio</h1>
           <p className="text-indigo-100 text-sm leading-relaxed mb-6">
             Calculate your true cost per unit, eliminate pricing guesswork, and generate scaled shopping lists for your upcoming production runs.
           </p>
