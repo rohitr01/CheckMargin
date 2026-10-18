@@ -10,6 +10,7 @@ import {
   Receipt,
   Truck,
 } from 'lucide-react';
+import UserNav from '@/components/UserNav';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Workspace Dashboard' },
@@ -69,11 +70,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
+        {/* User Session & Logout */}
+        <div className="mt-auto pt-4 px-2 border-t border-slate-100">
+          <UserNav />
+        </div>
+
         {/* Footer info in sidebar */}
-        <div className="mt-auto pt-6 px-3 border-t border-slate-100">
+        <div className="pt-4 px-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-3"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Public Site</span>

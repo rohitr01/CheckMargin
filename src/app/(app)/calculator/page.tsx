@@ -744,26 +744,66 @@ export default function CalculatorPage() {
     recalc(form, updated);
   }
 
-  function handleSaveProduct() {
+  async function handleSaveProduct() {
     if (!result) return;
+    setSaveMessage('Saving recipe to library...');
     try {
-      const savedList = JSON.parse(localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products') || '[]');
-      const newEntry = {
-        id: Date.now().toString(),
-        title: form.productName,
-        category: form.hsnCode || 'General',
-        unitCost: `₹${result.totalCostPerUnit.toFixed(2)}`,
-        sellingPrice: `₹${form.sellingPrice.toFixed(2)}`,
-        margin: `${result.grossMarginPercent.toFixed(1)}%`,
-        saleableYield: `${result.saleableYield} / ${form.batchSize}`,
-        date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
-      };
-      savedList.unshift(newEntry);
-      localStorage.setItem('checkmargin_products', JSON.stringify(savedList));
-      setSaveMessage('✅ Product successfully saved to library!');
-      setTimeout(() => setSaveMessage(''), 4000);
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.productName,
+          category: form.hsnCode ? `HSN ${form.hsnCode}` : 'General',
+          industryGroup: productType === 'digital' ? 'Digital & Tech' : 'Candles',
+          hsnCode: form.hsnCode,
+          gstRate: form.outputGSTRatePercent,
+          isDigital: productType === 'digital',
+          unitCost: result.totalCostPerUnit,
+          sellingPrice: form.sellingPrice,
+          marginPercent: result.grossMarginPercent,
+          saleableYield: `${result.saleableYield} / ${form.batchSize}`,
+          batchInput: form,
+          calculationResult: result,
+        }),
+      });
+
+      if (res.ok) {
+        setSaveMessage('✅ Saved to your Neon Cloud library!');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.upgradeRequired) {
+          setSaveMessage(`⚠️ ${data.error}`);
+        } else {
+          // Fallback to local storage if unauthenticated
+          const savedList = JSON.parse(
+            localStorage.getItem('checkmargin_products') ||
+            localStorage.getItem('makermargin_products') ||
+            '[]'
+          );
+          const newEntry = {
+            id: Date.now().toString(),
+            title: form.productName,
+            category: form.hsnCode ? `HSN ${form.hsnCode}` : 'General',
+            unitCost: `₹${result.totalCostPerUnit.toFixed(2)}`,
+            sellingPrice: `₹${form.sellingPrice.toFixed(2)}`,
+            margin: `${result.grossMarginPercent.toFixed(1)}%`,
+            saleableYield: `${result.saleableYield} / ${form.batchSize}`,
+            date: new Date().toLocaleDateString('en-IN', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+            isCustom: true,
+          };
+          savedList.unshift(newEntry);
+          localStorage.setItem('checkmargin_products', JSON.stringify(savedList));
+          setSaveMessage('Saved to local library (log in to sync to cloud)!');
+        }
+      }
+      setTimeout(() => setSaveMessage(''), 4500);
     } catch {
       setSaveMessage('Saved in current session.');
+      setTimeout(() => setSaveMessage(''), 4000);
     }
   }
 
@@ -820,7 +860,26 @@ export default function CalculatorPage() {
     document.body.removeChild(link);
   }
 
-  const prices = result ? suggestPrices(result.totalDirectCostPerUnit) : [];
+  const prices = result
+    ? suggestPrices(
+        result.totalDirectCostPerUnit,
+        [30, 50, 100],
+        [25, 40, 60],
+        {
+          platformFeePercent: form.platformFeePercent,
+          platformFeeFixed: form.platformFeeFixed,
+          gstOnPlatformFeePercent: form.gstOnPlatformFeePercent ?? 18,
+          shippingPerOrder: form.shippingPerOrder,
+          adSpendPerUnit: form.adSpendPerUnit,
+          rtoRatePercent: form.rtoRatePercent,
+          rtoLossPerReturn: form.rtoLossPerReturn,
+          packagingPerUnit: form.packagingPerUnit,
+          isGSTRegistered: form.isGSTRegistered,
+          outputGSTRatePercent: form.outputGSTRatePercent,
+          isPriceGSTInclusive: form.isPriceGSTInclusive,
+        }
+      )
+    : [];
   const shoppingList = result
     ? generateShoppingList(materials, targetUnits, result.saleableYield, form.batchSize)
     : [];
@@ -2302,9 +2361,25 @@ export default function CalculatorPage() {
                         {p.method === 'markup' ? '📈 Cost Markup' : '🎯 Target Gross Margin'}
                       </td>
                       <td className="py-3 font-bold text-indigo-700">{p.value}%</td>
-                      <td className="py-3 text-base font-black text-slate-900">₹{p.suggestedPrice.toFixed(0)}</td>
-                      <td className="py-3 font-bold text-emerald-700">₹{p.profitPerUnit.toFixed(2)}</td>
-                      <td className="py-3 font-semibold text-slate-600">{p.marginPercent.toFixed(1)}%</td>
+                      <td className="py-3 text-base font-black text-slate-900">
+                        {p.isAttainable !== false ? (
+                          `₹${p.suggestedPrice.toFixed(0)}`
+                        ) : (
+                          <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                            Unattainable
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 font-bold text-emerald-700">
+                        {p.isAttainable !== false ? `₹${p.profitPerUnit.toFixed(2)}` : '—'}
+                      </td>
+                      <td className="py-3 font-semibold text-slate-600">
+                        {p.isAttainable !== false ? (
+                          `${p.marginPercent.toFixed(1)}%`
+                        ) : (
+                          <span className="text-xs text-slate-400">Fees exceed margin</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

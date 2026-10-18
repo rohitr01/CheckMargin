@@ -23,7 +23,7 @@ const plans = [
       'Priority email & WhatsApp support',
     ],
     cta: 'Start Free Today',
-    href: '/calculator',
+    href: '/auth/signup',
     highlight: false,
   },
   {

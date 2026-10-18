@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, PlusCircle, Calculator, Trash2, Search, Sparkles, Filter, ArrowRight } from 'lucide-react';
+import {
+  Package,
+  PlusCircle,
+  Calculator,
+  Trash2,
+  Search,
+  Sparkles,
+  Filter,
+  ArrowRight,
+  Cloud,
+  CloudUpload,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  ShieldAlert,
+} from 'lucide-react';
+import { useSession } from '@/lib/auth/client';
 
 interface SavedProduct {
   id: string;
@@ -14,6 +30,19 @@ interface SavedProduct {
   saleableYield: string;
   date: string;
   industryGroup?: string;
+  isCustom?: boolean;
+}
+
+interface EntitlementsState {
+  plan: {
+    name: string;
+    displayName: string;
+    maxSavedProducts: number;
+    unlimitedProducts: boolean;
+  };
+  savedProductsCount: number;
+  canCreateProduct: boolean;
+  quotaRemaining: number;
 }
 
 const DEFAULT_PRESETS: SavedProduct[] = [
@@ -27,6 +56,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '9 / 10',
     date: 'Preset Demo',
     industryGroup: 'Candles',
+    isCustom: false,
   },
   {
     id: 'demo-2',
@@ -38,6 +68,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '11 / 12',
     date: 'Preset Demo',
     industryGroup: 'Soaps',
+    isCustom: false,
   },
   {
     id: 'demo-3',
@@ -49,6 +80,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '15 / 16',
     date: 'Preset Demo',
     industryGroup: 'Bakery',
+    isCustom: false,
   },
   {
     id: 'demo-4',
@@ -60,6 +92,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '10 / 10',
     date: 'Preset Demo',
     industryGroup: 'Cosmetics',
+    isCustom: false,
   },
   {
     id: 'demo-5',
@@ -71,6 +104,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '4 / 4',
     date: 'Preset Demo',
     industryGroup: 'Resin & Art',
+    isCustom: false,
   },
   {
     id: 'demo-6',
@@ -82,6 +116,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '9 / 10',
     date: 'Preset Demo',
     industryGroup: 'Jewellery',
+    isCustom: false,
   },
   {
     id: 'demo-7',
@@ -93,6 +128,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '5 / 5',
     date: 'Preset Demo',
     industryGroup: 'Apparel',
+    isCustom: false,
   },
   {
     id: 'demo-8',
@@ -104,6 +140,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '10 / 10',
     date: 'Preset Demo',
     industryGroup: 'Food',
+    isCustom: false,
   },
   {
     id: 'demo-9',
@@ -115,6 +152,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '50 / 50',
     date: 'Preset Demo',
     industryGroup: 'Digital & Tech',
+    isCustom: false,
   },
   {
     id: 'demo-10',
@@ -126,6 +164,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '8 / 8',
     date: 'Preset Demo',
     industryGroup: 'Resin & Art',
+    isCustom: false,
   },
   {
     id: 'demo-11',
@@ -137,6 +176,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '6 / 6',
     date: 'Preset Demo',
     industryGroup: 'Wood & Ceramics',
+    isCustom: false,
   },
   {
     id: 'demo-12',
@@ -148,6 +188,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '10 / 12',
     date: 'Preset Demo',
     industryGroup: 'Wood & Ceramics',
+    isCustom: false,
   },
   {
     id: 'demo-13',
@@ -159,6 +200,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '10 / 10',
     date: 'Preset Demo',
     industryGroup: 'Leather & Goods',
+    isCustom: false,
   },
   {
     id: 'demo-14',
@@ -170,6 +212,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     saleableYield: '40 / 40',
     date: 'Preset Demo',
     industryGroup: 'Digital & Tech',
+    isCustom: false,
   },
 ];
 
@@ -189,36 +232,131 @@ const INDUSTRY_FILTERS = [
 ];
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<SavedProduct[]>([]);
+  const { data: session } = useSession();
+  const [customProducts, setCustomProducts] = useState<SavedProduct[]>([]);
+  const [entitlements, setEntitlements] = useState<EntitlementsState | null>(null);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('All Categories');
+  const [localItemsToMigrate, setLocalItemsToMigrate] = useState<SavedProduct[]>([]);
+  const [migrating, setMigrating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'custom' | 'presets'>('all');
 
   useEffect(() => {
-    const saved = localStorage.getItem('makermargin_products');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setProducts(parsed.length > 0 ? parsed : DEFAULT_PRESETS);
-      } catch {
-        setProducts(DEFAULT_PRESETS);
-      }
-    } else {
-      setProducts(DEFAULT_PRESETS);
-    }
+    fetchCloudProducts();
+    checkLocalStorageMigration();
   }, []);
 
-  function handleDelete(id: string) {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    localStorage.setItem('makermargin_products', JSON.stringify(updated));
+  async function fetchCloudProducts() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        const data = await res.json();
+        const formatted: SavedProduct[] = (data.products || []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          category: p.category || (p.hsn_code ? `HSN ${p.hsn_code}` : 'Custom Recipe'),
+          unitCost: `₹${Number(p.unit_cost || 0).toFixed(2)}`,
+          sellingPrice: `₹${Number(p.selling_price || 0).toFixed(2)}`,
+          margin: `${Number(p.margin_percent || 0).toFixed(1)}%`,
+          saleableYield: p.saleable_yield || '1/1',
+          date: new Date(p.created_at).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          }),
+          industryGroup: p.industry_group || 'Candles',
+          isCustom: true,
+        }));
+        setCustomProducts(formatted);
+        if (data.entitlements) {
+          setEntitlements(data.entitlements);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load cloud products:', err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleResetDemo() {
-    setProducts(DEFAULT_PRESETS);
-    localStorage.setItem('makermargin_products', JSON.stringify(DEFAULT_PRESETS));
+  function checkLocalStorageMigration() {
+    try {
+      const saved = localStorage.getItem('makermargin_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Exclude items that are identical to demo presets
+        const customOnly = parsed.filter(
+          (item: SavedProduct) => !item.id.startsWith('demo-')
+        );
+        if (customOnly.length > 0) {
+          setLocalItemsToMigrate(customOnly);
+        }
+      }
+    } catch {
+      // ignore JSON parse errors
+    }
   }
 
-  const filteredProducts = products.filter((p) => {
+  async function handleMigrateLocal() {
+    if (localItemsToMigrate.length === 0) return;
+    setMigrating(true);
+    try {
+      for (const item of localItemsToMigrate) {
+        await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: item.title,
+            category: item.category,
+            industryGroup: item.industryGroup || 'Candles',
+            unitCost: parseFloat(item.unitCost.replace(/[^\d.]/g, '')) || 0,
+            sellingPrice: parseFloat(item.sellingPrice.replace(/[^\d.]/g, '')) || 0,
+            marginPercent: parseFloat(item.margin.replace(/[^\d.]/g, '')) || 0,
+            saleableYield: item.saleableYield,
+          }),
+        });
+      }
+      localStorage.removeItem('makermargin_products');
+      setLocalItemsToMigrate([]);
+      await fetchCloudProducts();
+    } catch (err) {
+      console.error('Migration failed:', err);
+    } finally {
+      setMigrating(false);
+    }
+  }
+
+  async function handleDelete(id: string, isCustom?: boolean) {
+    if (isCustom) {
+      try {
+        const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setCustomProducts((prev) => prev.filter((p) => p.id !== id));
+          if (entitlements) {
+            setEntitlements({
+              ...entitlements,
+              savedProductsCount: Math.max(0, entitlements.savedProductsCount - 1),
+              quotaRemaining: entitlements.quotaRemaining + 1,
+              canCreateProduct: true,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Delete failed:', err);
+      }
+    }
+  }
+
+  const allDisplayProducts =
+    activeTab === 'custom'
+      ? customProducts
+      : activeTab === 'presets'
+      ? DEFAULT_PRESETS
+      : [...customProducts, ...DEFAULT_PRESETS];
+
+  const filteredProducts = allDisplayProducts.filter((p) => {
     const matchesSearch =
       p.title.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase());
@@ -242,75 +380,153 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleResetDemo}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 bg-white border border-slate-300 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
-          >
-            Reset Pre-filled Presets
-          </button>
           <Link
             href="/calculator"
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>New Costing</span>
+            <span>Cost New Product</span>
           </Link>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search products by title, HSN code, or tax rate..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+      {/* Plan Entitlements Banner */}
+      {entitlements && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <Cloud className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">
+                {entitlements.plan.displayName}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {entitlements.plan.unlimitedProducts ? (
+                  <span className="text-emerald-700 font-semibold">Unlimited Cloud Recipes Active</span>
+                ) : (
+                  <span>
+                    {entitlements.savedProductsCount} of {entitlements.plan.maxSavedProducts} Custom Products saved (
+                    {entitlements.quotaRemaining} slots remaining)
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <span>Showing {filteredProducts.length} of {products.length} products</span>
+          {!entitlements.plan.unlimitedProducts && (
+            <Link
+              href="/settings/billing"
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors self-start sm:self-center"
+            >
+              Upgrade to Pro (₹299/mo) →
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* LocalStorage Migration Alert */}
+      {localItemsToMigrate.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <CloudUpload className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-amber-900">
+                Found {localItemsToMigrate.length} local recipe(s) saved on this device
+              </p>
+              <p className="text-[11px] text-amber-700">
+                Migrate them to your Neon PostgreSQL Cloud account so you never lose them.
+              </p>
+            </div>
           </div>
+          <button
+            onClick={handleMigrateLocal}
+            disabled={migrating}
+            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer self-start sm:self-center"
+          >
+            {migrating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CloudUpload className="w-3.5 h-3.5" />}
+            <span>Migrate to Cloud</span>
+          </button>
+        </div>
+      )}
+
+      {/* Tabs and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        {/* View Tabs */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              activeTab === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            All Products ({customProducts.length + DEFAULT_PRESETS.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('custom')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              activeTab === 'custom' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            My Saved ({customProducts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('presets')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              activeTab === 'presets' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Industry Templates ({DEFAULT_PRESETS.length})
+          </button>
         </div>
 
-        {/* Industry Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
-          {INDUSTRY_FILTERS.map((ind) => (
-            <button
-              key={ind}
-              onClick={() => setSelectedIndustry(ind)}
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
-                selectedIndustry === ind
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+        {/* Search & Industry Filter */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder="Search product or HSN..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-1.5 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
+            />
+          </div>
+
+          <div className="relative">
+            <select
+              value={selectedIndustry}
+              onChange={(e) => setSelectedIndustry(e.target.value)}
+              className="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs cursor-pointer"
             >
-              {ind}
-            </button>
-          ))}
+              {INDUSTRY_FILTERS.map((ind) => (
+                <option key={ind} value={ind}>
+                  {ind}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {/* Product Cards Grid */}
+      {loading ? (
+        <div className="py-16 text-center">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
+          <p className="text-xs text-slate-500">Loading recipes from Neon PostgreSQL...</p>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-bold text-slate-900 text-lg mb-1">No products found</h3>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
-            No products matched your search or category filter. Try clearing filters or create a new batch.
-          </p>
+          <h3 className="font-bold text-slate-900 text-base mb-1">No products match your filter</h3>
+          <p className="text-xs text-slate-500 mb-6">Try searching for a different keyword or reset industry filters.</p>
           <button
             onClick={() => {
               setSearch('');
               setSelectedIndustry('All Categories');
             }}
-            className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl transition-colors"
+            className="text-xs font-bold text-indigo-600 hover:underline"
           >
-            Clear All Filters
+            Clear Filters
           </button>
         </div>
       ) : (
@@ -318,61 +534,73 @@ export default function ProductsPage() {
           {filteredProducts.map((p) => (
             <div
               key={p.id}
-              className="bg-white border border-slate-200 hover:border-indigo-400 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+              className={`bg-white border-2 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
+                p.isCustom ? 'border-indigo-200 hover:border-indigo-400' : 'border-slate-200 hover:border-slate-300'
+              }`}
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                    {p.industryGroup || 'General'}
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-400">
-                    {p.date}
-                  </span>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-md">
+                        {p.industryGroup || 'General'}
+                      </span>
+                      {p.isCustom ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          Cloud
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                          Template
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">
+                      {p.title}
+                    </h3>
+                  </div>
+
+                  {p.isCustom && (
+                    <button
+                      onClick={() => handleDelete(p.id, p.isCustom)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Delete saved recipe"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                <h3 className="font-bold text-slate-900 text-base leading-snug mb-1 group-hover:text-indigo-600 transition-colors">
-                  {p.title}
-                </h3>
-                <span className="inline-block text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md mb-4">
-                  {p.category}
-                </span>
+                <p className="text-[11px] text-slate-400 font-medium mb-4">{p.category}</p>
 
-                <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                {/* Economics Grid */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Cost</span>
-                    <span className="text-xs font-black text-slate-900">{p.unitCost}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Unit Cost</span>
+                    <span className="text-xs font-bold text-slate-900">{p.unitCost}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Price</span>
-                    <span className="text-xs font-black text-slate-900">{p.sellingPrice}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Price</span>
+                    <span className="text-xs font-bold text-indigo-600">{p.sellingPrice}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Margin</span>
-                    <span className="text-xs font-black text-emerald-600">{p.margin}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Margin</span>
+                    <span className="text-xs font-black text-emerald-700">{p.margin}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] text-slate-500 font-medium">
-                  Yield: <strong className="text-slate-800">{p.saleableYield}</strong>
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Delete product"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <Link
-                    href="/calculator"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors"
-                  >
-                    <span>Recalculate</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
+              {/* Card Footer */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-400">Yield: {p.saleableYield} units</span>
+                <Link
+                  href="/calculator"
+                  className="font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 group"
+                >
+                  <span>Open Recipe</span>
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
               </div>
             </div>
           ))}

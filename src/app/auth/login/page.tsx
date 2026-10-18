@@ -1,7 +1,57 @@
-import Link from 'next/link';
-import { Calculator, ArrowRight, Lock, Mail } from 'lucide-react';
+'use client';
 
-export default function LoginPage() {
+import { useState, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Calculator, ArrowRight, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { authClient } from '@/lib/auth/client';
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error: authError } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message || 'Invalid email or password.');
+        setLoading(false);
+        return;
+      }
+
+      router.push(redirectUrl);
+      router.refresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'An error occurred while logging in.';
+      setError(msg);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 w-full max-w-md shadow-sm">
@@ -16,9 +66,16 @@ export default function LoginPage() {
         </Link>
 
         <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Welcome back</h1>
-        <p className="text-xs text-slate-500 mb-8">Log in to manage your product recipes and costing studio</p>
+        <p className="text-xs text-slate-500 mb-6">Log in to manage your product recipes and costing studio</p>
 
-        <form className="space-y-4">
+        {error && (
+          <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
               Email Address
@@ -27,6 +84,9 @@ export default function LoginPage() {
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="founder@yourbrand.com"
                 className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs"
               />
@@ -38,36 +98,63 @@ export default function LoginPage() {
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Password
               </label>
-              <a href="#" className="text-xs font-semibold text-indigo-600 hover:underline">
-                Forgot?
-              </a>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               <input
                 type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs"
               />
             </div>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all mt-2"
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
           >
-            <span>Log in to Studio</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              <>
+                <span>Log in to Studio</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
           Don&apos;t have an account yet?{' '}
-          <Link href="/auth/signup" className="font-bold text-indigo-600 hover:underline">
+          <Link
+            href={`/auth/signup${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
+            className="font-bold text-indigo-600 hover:underline"
+          >
             Sign up free
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

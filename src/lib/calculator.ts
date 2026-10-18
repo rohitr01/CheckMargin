@@ -7,9 +7,51 @@ export interface Material {
   packPrice: number;        // price paid per pack (₹)
   packSize: number;         // size of pack
   packUnit: string;         // 'g' | 'kg' | 'ml' | 'L' | 'piece' | 'metre' | 'pack'
-  qtyUsed: number;          // quantity used per batch (same unit)
+  qtyUsed: number;          // quantity used per batch
+  qtyUnit?: string;         // optional unit used in recipe (if different from packUnit, e.g. recipe uses 'g' while pack is 'kg')
   gstRatePercent?: number;  // input GST on this material (e.g. 0, 5, 12, 18)
   isPackPriceGSTInclusive?: boolean; // whether packPrice includes GST (default true)
+}
+
+/**
+ * Accurately converts quantities between compatible measurement units
+ * (weight: g/kg/mg, volume: ml/L, length: mm/cm/m/inch)
+ */
+export function convertUnit(qty: number, fromUnit?: string, toUnit?: string): number {
+  if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) {
+    return qty;
+  }
+  const from = fromUnit.toLowerCase().trim();
+  const to = toUnit.toLowerCase().trim();
+
+  const weights: Record<string, number> = {
+    g: 1, gram: 1, grams: 1,
+    kg: 1000, kilogram: 1000, kilograms: 1000,
+    mg: 0.001, milligram: 0.001, milligrams: 0.001,
+  };
+  if (weights[from] && weights[to]) {
+    return (qty * weights[from]) / weights[to];
+  }
+
+  const volumes: Record<string, number> = {
+    ml: 1, millilitre: 1, milliliter: 1, millilitres: 1, milliliters: 1,
+    l: 1000, litre: 1000, liter: 1000, litres: 1000, liters: 1000,
+  };
+  if (volumes[from] && volumes[to]) {
+    return (qty * volumes[from]) / volumes[to];
+  }
+
+  const lengths: Record<string, number> = {
+    mm: 0.1, millimeter: 0.1, millimeters: 0.1,
+    cm: 1, centimeter: 1, centimeters: 1,
+    m: 100, metre: 100, meter: 100, metres: 100, meters: 100,
+    inch: 2.54, inches: 2.54,
+  };
+  if (lengths[from] && lengths[to]) {
+    return (qty * lengths[from]) / lengths[to];
+  }
+
+  return qty;
 }
 
 export interface ChannelPreset {
@@ -232,6 +274,10 @@ export interface PriceScenario {
   suggestedPrice: number;
   profitPerUnit: number;
   marginPercent: number;
+  isAttainable: boolean;
+  unattainableReason?: string;
+  realizedRevenue?: number;
+  totalCost?: number;
 }
 
 export interface ShoppingListItem {
@@ -260,7 +306,8 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
   const materialBreakdown = input.materials.map((m) => {
     const gstRate = m.gstRatePercent ?? 18;
     const isInclusive = m.isPackPriceGSTInclusive ?? true;
-    const qtyRatio = m.packSize > 0 ? m.qtyUsed / m.packSize : 0;
+    const effectiveQtyUsed = m.qtyUnit ? convertUnit(m.qtyUsed, m.qtyUnit, m.packUnit) : m.qtyUsed;
+    const qtyRatio = m.packSize > 0 ? effectiveQtyUsed / m.packSize : 0;
     
     let basePackPrice = m.packPrice;
     let packGST = 0;
@@ -426,33 +473,192 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
   };
 }
 
+export interface TargetPriceInput {
+  totalDirectCostPerUnit: number;
+  platformFeePercent: number;
+  platformFeeFixed: number;
+  gstOnPlatformFeePercent?: number;
+  shippingPerOrder: number;
+  adSpendPerUnit?: number;
+  rtoRatePercent?: number;
+  rtoLossPerReturn?: number;
+  packagingPerUnit?: number;
+  isGSTRegistered: boolean;
+  outputGSTRatePercent: number;
+  isPriceGSTInclusive: boolean;
+}
+
 /**
- * Suggest selling prices using markup and target-margin methods
+ * Analytical target price solver.
+ * Solves for gross price P where Realized Revenue - Total Cost achieves the exact target margin or markup.
+ * Mathematically accounts for:
+ *   - Direct manufacturing & craft labour cost
+ *   - Marketplace referral/commission %
+ *   - Fixed platform closing fees
+ *   - 18% statutory GST on marketplace services
+ *   - Outbound logistics / shipping
+ *   - Customer Acquisition Cost (CAC / Ad Spend)
+ *   - Customer returns & RTO loss reserve
+ *   - Output GST on selling price (inclusive vs exclusive)
+ */
+export function solveTargetPrice(
+  input: TargetPriceInput,
+  method: 'target-margin' | 'markup',
+  targetPercent: number
+): PriceScenario {
+  const g = input.isGSTRegistered && input.isPriceGSTInclusive ? input.outputGSTRatePercent / 100 : 0;
+  const fPct = input.platformFeePercent / 100;
+  const gs = (input.gstOnPlatformFeePercent ?? 18) / 100;
+  const feeMultiplier = fPct * (1 + gs);
+  const fixedFeeWithGST = input.platformFeeFixed * (1 + gs);
+
+  const rtoRate = (input.rtoRatePercent ?? 0) / 100;
+  const defaultRtoLoss = input.shippingPerOrder + (input.packagingPerUnit ?? 0);
+  const rtoLoss = input.rtoLossPerReturn ?? defaultRtoLoss;
+  const rtoAllowance = rtoRate * rtoLoss;
+
+  const fixedCosts =
+    input.totalDirectCostPerUnit +
+    input.shippingPerOrder +
+    (input.adSpendPerUnit ?? 0) +
+    rtoAllowance +
+    fixedFeeWithGST;
+
+  const revMultiplier = 1 / (1 + g);
+
+  if (method === 'target-margin') {
+    const m = targetPercent / 100;
+    // Condition: P * [revMultiplier * (1 - m) - feeMultiplier] = fixedCosts
+    const denominator = revMultiplier * (1 - m) - feeMultiplier;
+
+    if (denominator <= 0.001) {
+      return {
+        method: 'target-margin',
+        value: targetPercent,
+        suggestedPrice: 0,
+        profitPerUnit: 0,
+        marginPercent: 0,
+        isAttainable: false,
+        unattainableReason: `Target margin of ${targetPercent}% is mathematically unattainable with ${input.platformFeePercent}% channel fee and ${input.outputGSTRatePercent}% tax.`,
+      };
+    }
+
+    const price = Math.round((fixedCosts / denominator) * 100) / 100;
+    const realizedRev = price * revMultiplier;
+    const totalSellingCost =
+      (price * fPct + input.platformFeeFixed) * (1 + gs) +
+      input.shippingPerOrder +
+      (input.adSpendPerUnit ?? 0) +
+      rtoAllowance;
+    const totalCost = input.totalDirectCostPerUnit + totalSellingCost;
+    const profit = Math.round((realizedRev - totalCost) * 100) / 100;
+    const margin = realizedRev > 0 ? (profit / realizedRev) * 100 : 0;
+
+    return {
+      method: 'target-margin',
+      value: targetPercent,
+      suggestedPrice: price,
+      profitPerUnit: profit,
+      marginPercent: Math.round(margin * 10) / 10,
+      isAttainable: true,
+      realizedRevenue: realizedRev,
+      totalCost,
+    };
+  } else {
+    // markup on direct production cost
+    const k = targetPercent / 100;
+    const targetProfit = k * input.totalDirectCostPerUnit;
+    const denominator = revMultiplier - feeMultiplier;
+
+    if (denominator <= 0.001) {
+      return {
+        method: 'markup',
+        value: targetPercent,
+        suggestedPrice: 0,
+        profitPerUnit: 0,
+        marginPercent: 0,
+        isAttainable: false,
+        unattainableReason: `Markup of ${targetPercent}% cannot be achieved because channel fees exceed allowable price structure.`,
+      };
+    }
+
+    const price = Math.round(((fixedCosts + targetProfit) / denominator) * 100) / 100;
+    const realizedRev = price * revMultiplier;
+    const totalSellingCost =
+      (price * fPct + input.platformFeeFixed) * (1 + gs) +
+      input.shippingPerOrder +
+      (input.adSpendPerUnit ?? 0) +
+      rtoAllowance;
+    const totalCost = input.totalDirectCostPerUnit + totalSellingCost;
+    const profit = Math.round((realizedRev - totalCost) * 100) / 100;
+    const margin = realizedRev > 0 ? (profit / realizedRev) * 100 : 0;
+
+    return {
+      method: 'markup',
+      value: targetPercent,
+      suggestedPrice: price,
+      profitPerUnit: profit,
+      marginPercent: Math.round(margin * 10) / 10,
+      isAttainable: true,
+      realizedRevenue: realizedRev,
+      totalCost,
+    };
+  }
+}
+
+/**
+ * Suggest selling prices using markup and target-margin methods.
+ * Accepts optional channel and tax parameters to run the full analytical solver.
  */
 export function suggestPrices(
   totalDirectCostPerUnit: number,
   markupPercents: number[] = [30, 50, 100],
-  marginPercents: number[] = [25, 40, 60]
+  marginPercents: number[] = [25, 40, 60],
+  channelOptions?: Partial<TargetPriceInput>
 ): PriceScenario[] {
+  if (channelOptions) {
+    const fullInput: TargetPriceInput = {
+      totalDirectCostPerUnit,
+      platformFeePercent: channelOptions.platformFeePercent ?? 0,
+      platformFeeFixed: channelOptions.platformFeeFixed ?? 0,
+      gstOnPlatformFeePercent: channelOptions.gstOnPlatformFeePercent ?? 18,
+      shippingPerOrder: channelOptions.shippingPerOrder ?? 0,
+      adSpendPerUnit: channelOptions.adSpendPerUnit ?? 0,
+      rtoRatePercent: channelOptions.rtoRatePercent ?? 0,
+      rtoLossPerReturn: channelOptions.rtoLossPerReturn ?? 0,
+      packagingPerUnit: channelOptions.packagingPerUnit ?? 0,
+      isGSTRegistered: channelOptions.isGSTRegistered ?? false,
+      outputGSTRatePercent: channelOptions.outputGSTRatePercent ?? 0,
+      isPriceGSTInclusive: channelOptions.isPriceGSTInclusive ?? true,
+    };
+
+    const markupScenarios = markupPercents.map((pct) => solveTargetPrice(fullInput, 'markup', pct));
+    const marginScenarios = marginPercents.map((pct) => solveTargetPrice(fullInput, 'target-margin', pct));
+    return [...markupScenarios, ...marginScenarios];
+  }
+
+  // Fallback for simple direct cost scaling
   const markupScenarios: PriceScenario[] = markupPercents.map((pct) => {
     const price = totalDirectCostPerUnit * (1 + pct / 100);
     return {
       method: 'markup',
       value: pct,
       suggestedPrice: Math.round(price * 100) / 100,
-      profitPerUnit: price - totalDirectCostPerUnit,
-      marginPercent: (1 - totalDirectCostPerUnit / price) * 100,
+      profitPerUnit: Math.round((price - totalDirectCostPerUnit) * 100) / 100,
+      marginPercent: Math.round((1 - totalDirectCostPerUnit / price) * 1000) / 10,
+      isAttainable: true,
     };
   });
 
   const marginScenarios: PriceScenario[] = marginPercents.map((pct) => {
-    const price = totalDirectCostPerUnit / (1 - pct / 100);
+    const price = totalDirectCostPerUnit / Math.max(1 - pct / 100, 0.001);
     return {
       method: 'target-margin',
       value: pct,
       suggestedPrice: Math.round(price * 100) / 100,
-      profitPerUnit: price - totalDirectCostPerUnit,
+      profitPerUnit: Math.round((price - totalDirectCostPerUnit) * 100) / 100,
       marginPercent: pct,
+      isAttainable: true,
     };
   });
 
@@ -593,7 +799,11 @@ export interface ScaledBatchSummary {
 }
 
 /**
- * Simulates scaling a batch up (e.g. 2x, 5x, 10x) with realistic labour efficiency curves
+ * Simulates scaling a batch up (e.g. 2x, 5x, 10x) using an explicit industrial engineering model:
+ * - Setup & prep time (25% of batch labour) remains fixed per production run.
+ * - Craft / pouring time (75% of batch labour) scales with volume.
+ * - Materials and packaging scale linearly with units produced.
+ * - Overhead is partitioned into fixed facility overhead (75%) and variable operating overhead (25%).
  */
 export function scaleBatch(
   baseInput: BatchInput,
@@ -609,17 +819,19 @@ export function scaleBatch(
   // Materials scale linearly
   const scaledMaterialCost = baseResult.totalMaterialCost * mult;
 
-  // Labour exhibits economies of scale: setup and prep time are fixed,
-  // so scaling by M typically takes M^0.80 time rather than M^1.0 time.
-  const labourEfficiencyFactor = Math.pow(mult, 0.78);
-  const scaledLabourMinutes = Math.round(baseInput.labourMinutes * labourEfficiencyFactor);
+  // Setup time stays fixed, while craft processing time scales linearly with batch units
+  const setupMinutes = Math.round(baseInput.labourMinutes * 0.25);
+  const craftMinutes = Math.max(baseInput.labourMinutes - setupMinutes, 0);
+  const scaledLabourMinutes = setupMinutes + Math.round(craftMinutes * mult);
   const scaledLabourCost = (scaledLabourMinutes / 60) * baseInput.labourHourlyRate;
 
   // Packaging scales linearly with saleable units
   const scaledPackagingCost = baseInput.packagingPerUnit * scaledYield;
 
-  // Overhead has both fixed and variable portions: studio rent is fixed, electricity/tools increase slightly
-  const scaledOverheadCost = baseInput.overheadPerBatch * Math.pow(mult, 0.5);
+  // Overhead has fixed studio overhead (75%) and variable utility/tools consumption (25%)
+  const fixedOverhead = baseInput.overheadPerBatch * 0.75;
+  const variableOverhead = baseInput.overheadPerBatch * 0.25 * mult;
+  const scaledOverheadCost = fixedOverhead + variableOverhead;
 
   const totalDirectBatchCost =
     scaledMaterialCost + scaledLabourCost + scaledPackagingCost + scaledOverheadCost;
