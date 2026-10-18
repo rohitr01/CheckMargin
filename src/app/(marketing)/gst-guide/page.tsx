@@ -428,11 +428,13 @@ export default function GSTComplianceGuidePage() {
                     onChange={(e) => setSelectedRate(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="all">All GST Rates (0%, 3%, 5%, 12%, 18%)</option>
-                    <option value="3">3% Concessional (Jewellery)</option>
-                    <option value="5">5% Concessional (Candles, Soaps, Bakery)</option>
-                    <option value="12">12% Standard (Ceramics, Wood, Apparel)</option>
-                    <option value="18">18% Standard (Resin, Cosmetics, Digital)</option>
+                    <option value="all">All GST Rates (0%, 1.5%, 3%, 5%, 12%, 18%)</option>
+                    <option value="0">0% Exempt (Fresh Bread, Live Plants, Printed Books)</option>
+                    <option value="1.5">1.5% Special (Cut & Polished Gemstones)</option>
+                    <option value="3">3% Concessional (Jewellery, Gold, Silverware)</option>
+                    <option value="5">5% Concessional (Candles, Soaps, Spices, Honey, Tea)</option>
+                    <option value="12">12% Standard (Ceramics, Wood, Cookware, Toys)</option>
+                    <option value="18">18% Standard (Resin, Cosmetics, Digital, Software)</option>
                   </select>
                 </div>
               </div>
@@ -447,7 +449,7 @@ export default function GSTComplianceGuidePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredDirectory.map((item) => (
                     <div
-                      key={item.code}
+                      key={`${item.code}-${item.name}`}
                       className="border-2 border-slate-200/80 hover:border-indigo-400 rounded-2xl p-5 bg-white shadow-xs transition-all space-y-3 flex flex-col justify-between"
                     >
                       <div>

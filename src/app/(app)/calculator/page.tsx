@@ -1,5 +1,6 @@
 'use client';
 
+import { HSN_ALL_PRESETS, SAC_ALL_PRESETS } from '@/lib/gst-directory';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
@@ -74,8 +75,7 @@ const SAC_PRESETS = [
 
 const DIGITAL_PRESETS = [
   {
-    id: 'notion',
-    emoji: '💻',
+    id: 'notion', emoji: '📝',
     name: 'Notion Life & Business OS Template',
     sac: '9984',
     sellingPrice: 999,
@@ -92,8 +92,7 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 250,
   },
   {
-    id: 'stl3d',
-    emoji: '🧊',
+    id: 'stl3d', emoji: '🧊',
     name: '3D Printable STL Model & Miniature Bundle',
     sac: '9983',
     sellingPrice: 1499,
@@ -110,8 +109,7 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 300,
   },
   {
-    id: 'lightroom',
-    emoji: '📷',
+    id: 'lightroom', emoji: '📸',
     name: 'Cinematic Lightroom Presets Pack (Mobile & Desktop)',
     sac: '9984',
     sellingPrice: 799,
@@ -127,8 +125,7 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 250,
   },
   {
-    id: 'canva',
-    emoji: '🎨',
+    id: 'canva', emoji: '🎨',
     name: 'Canva Social Media Kit (150+ Viral Templates)',
     sac: '9984',
     sellingPrice: 699,
@@ -144,8 +141,7 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 200,
   },
   {
-    id: 'course',
-    emoji: '🎓',
+    id: 'course', emoji: '🎥',
     name: 'Self-Paced Video Course & Masterclass',
     sac: '9984',
     sellingPrice: 2499,
@@ -162,8 +158,7 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 350,
   },
   {
-    id: 'audio',
-    emoji: '🎵',
+    id: 'audio', emoji: '🎧',
     name: 'Lo-Fi Beats & Audio Sample Pack (WAV/MIDI)',
     sac: '9984',
     sellingPrice: 899,
@@ -229,8 +224,7 @@ const INITIAL_FORM: BatchInput = {
 
 const PHYSICAL_PRESETS = [
   {
-    id: 'candle',
-    emoji: '🕯️',
+    id: 'candle', emoji: '🕯️',
     industry: 'Candles & Wax Melts',
     name: 'Handcrafted 200g Vanilla Soy Candle',
     hsnCode: '3406',
@@ -251,8 +245,7 @@ const PHYSICAL_PRESETS = [
     materials: INITIAL_MATERIALS,
   },
   {
-    id: 'soap',
-    emoji: '🧼',
+    id: 'soap', emoji: '🧼',
     industry: 'Cold Process Soaps',
     name: 'Cold Process Honey & Goat Milk Soap Bar',
     hsnCode: '3401',
@@ -337,8 +330,7 @@ const PHYSICAL_PRESETS = [
     ],
   },
   {
-    id: 'resin',
-    emoji: '🎨',
+    id: 'resin', emoji: '🌊',
     industry: 'Resin & Molded Art',
     name: 'Ocean Wave Epoxy Resin Coasters (Set of 4)',
     hsnCode: '3926',
@@ -710,12 +702,23 @@ export default function CalculatorPage() {
     }
   }
 
-  function handleHSNChange(code: string) {
-    const preset = HSN_PRESETS.find((h) => h.code === code) || SAC_PRESETS.find((s) => s.code === code);
+  function handleHSNChange(selectedVal: string) {
+    let code = selectedVal;
+    let rate: number | undefined;
+
+    if (selectedVal.includes('::')) {
+      const parts = selectedVal.split('::');
+      code = parts[0];
+      rate = parseFloat(parts[2]);
+    } else {
+      const found = HSN_ALL_PRESETS.find((h) => h.code === code) || SAC_ALL_PRESETS.find((s) => s.code === code);
+      if (found) rate = found.defaultRate;
+    }
+
     const updated = {
       ...form,
       hsnCode: code,
-      outputGSTRatePercent: preset ? preset.defaultRate : form.outputGSTRatePercent,
+      outputGSTRatePercent: rate !== undefined ? rate : form.outputGSTRatePercent,
     };
     setForm(updated);
     recalc(updated, materials);
@@ -1093,20 +1096,47 @@ export default function CalculatorPage() {
                 {productType === 'digital' ? 'Service Accounting Code (SAC)' : 'HSN Classification'}
               </label>
               <select
-                value={form.hsnCode}
+                value={
+                  (() => {
+                    const pool = productType === 'digital' ? SAC_ALL_PRESETS : HSN_ALL_PRESETS;
+                    const matched = pool.find((p) => p.code === form.hsnCode && p.defaultRate === form.outputGSTRatePercent);
+                    if (matched) return `${matched.code}::${matched.name}::${matched.defaultRate}`;
+                    const byCode = pool.find((p) => p.code === form.hsnCode);
+                    if (byCode) return `${byCode.code}::${byCode.name}::${byCode.defaultRate}`;
+                    return form.hsnCode;
+                  })()
+                }
                 onChange={(e) => handleHSNChange(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               >
                 {productType === 'digital'
-                  ? SAC_PRESETS.map((s) => (
-                      <option key={s.code} value={s.code}>
-                        SAC {s.code} - {s.name} ({s.defaultRate}%)
-                      </option>
+                  ? Object.entries(
+                      SAC_ALL_PRESETS.reduce<Record<string, typeof SAC_ALL_PRESETS>>((acc, item) => {
+                        (acc[item.industry] = acc[item.industry] || []).push(item);
+                        return acc;
+                      }, {})
+                    ).map(([industry, items]) => (
+                      <optgroup key={industry} label={industry}>
+                        {items.map((s, idx) => (
+                          <option key={`${s.code}-${idx}`} value={`${s.code}::${s.name}::${s.defaultRate}`}>
+                            SAC {s.code} - {s.name} ({s.defaultRate}%)
+                          </option>
+                        ))}
+                      </optgroup>
                     ))
-                  : HSN_PRESETS.map((h) => (
-                      <option key={h.code} value={h.code}>
-                        HSN {h.code} - {h.name} ({h.defaultRate}%)
-                      </option>
+                  : Object.entries(
+                      HSN_ALL_PRESETS.reduce<Record<string, typeof HSN_ALL_PRESETS>>((acc, item) => {
+                        (acc[item.industry] = acc[item.industry] || []).push(item);
+                        return acc;
+                      }, {})
+                    ).map(([industry, items]) => (
+                      <optgroup key={industry} label={industry}>
+                        {items.map((h, idx) => (
+                          <option key={`${h.code}-${idx}`} value={`${h.code}::${h.name}::${h.defaultRate}`}>
+                            HSN {h.code} - {h.name} ({h.defaultRate}%)
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
               </select>
             </div>

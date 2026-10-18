@@ -1,3 +1,4 @@
+import { GST_CATALOG } from './gst-directory';
 // CheckMargin Core Calculation Engine
 // Pure functions — deterministic, transparent, and comprehensive
 
@@ -653,69 +654,11 @@ export interface HSNGuideItem {
   notes2025: string;
 }
 
-export const HSN_DIRECTORY: HSNGuideItem[] = [
-  {
-    hsnCode: '3406',
-    productCategory: 'Candles, Tapres & Wax Melts',
-    gstRatePercent: 5,
-    applicableItems: ['Soy wax jars', 'Beeswax pillar candles', 'Scented wax melts', 'Tea-light candles'],
-    itcEligibility: 'Eligible (Full ITC on wax, fragrance oils, wicks, and jars)',
-    notes2025: 'Concessional craft rate under 5% slab. Input raw materials often attract 18%, creating an accumulated ITC position.',
-  },
-  {
-    hsnCode: '3401',
-    productCategory: 'Soaps & Cleansing Bars',
-    gstRatePercent: 5,
-    applicableItems: ['Handcrafted cold process soap', 'Goat milk soap bars', 'Glycerin melt & pour', 'Shampoo bars'],
-    itcEligibility: 'Eligible (Full ITC on caustic soda, plant oils, butters, and packaging)',
-    notes2025: 'Bath and toilet soap bars attract 5%. Medicated or specialty soaps may fall under 18%.',
-  },
-  {
-    hsnCode: '1905',
-    productCategory: 'Artisanal Bakery & Food',
-    gstRatePercent: 5,
-    applicableItems: ['Breads, sourdough loaves', 'Biscuits, cookies, rusks', 'Cakes, pastries, babkas'],
-    itcEligibility: 'Eligible (Requires registered supplier tax invoices on flour, dairy, chocolate)',
-    notes2025: 'Plain unbranded bread is 0% exempt. Artisanal branded cookies, cakes, and loaves attract 5%.',
-  },
-  {
-    hsnCode: '3304',
-    productCategory: 'Cosmetics, Skincare & Serums',
-    gstRatePercent: 18,
-    applicableItems: ['Face serums, facial oils', 'Body lotions, body butters', 'Lip balms, lip tints', 'Face masks, clay scrubs'],
-    itcEligibility: 'Eligible (ITC claimable on essential oils, carrier oils, glass dropper bottles)',
-    notes2025: 'Standard 18% beauty and skincare slab across India.',
-  },
-  {
-    hsnCode: '3926',
-    productCategory: 'Resin Art & Cast Polymer Decor',
-    gstRatePercent: 18,
-    applicableItems: ['Epoxy resin coasters', 'Resin wall clocks, ocean trays', 'Polymer clay jewelry', 'Silicone molded decor'],
-    itcEligibility: 'Eligible (ITC on epoxy resin, hardener, alcohol inks, mica powders)',
-    notes2025: 'Classified under articles of plastics/polymers (18%).',
-  },
-  {
-    hsnCode: '6815',
-    productCategory: 'Jesmonite, Cement & Plaster Decor',
-    gstRatePercent: 18,
-    applicableItems: ['Jesmonite AC100 trays', 'Concrete planters', 'Plaster trinket dishes', 'Mineral casting homeware'],
-    itcEligibility: 'Eligible (ITC on base mineral powder, acrylic liquids, pigments, sealers)',
-    notes2025: 'Classified under articles of stone, plaster, or cement not elsewhere specified (18%).',
-  },
-  {
-    hsnCode: '6204 / 6101',
-    productCategory: 'Apparel & Handmade Textiles',
-    gstRatePercent: 5,
-    applicableItems: ['Handmade cotton dresses', 'Tote bags, scrunchies', 'Embroidered shirts', 'Linen kitchen aprons'],
-    itcEligibility: 'Eligible (ITC on fabric, embroidery threads, buttons, packaging)',
-    notes2025: '5% for garments with sale value <= ₹1,000; 12% for garments with sale value > ₹1,000.',
-  },
-  {
-    hsnCode: '6912',
-    productCategory: 'Ceramic Pottery & Tableware',
-    gstRatePercent: 12,
-    applicableItems: ['Wheel-thrown ceramic mugs', 'Handmade ceramic bowls', 'Stoneware plates', 'Studio pottery vases'],
-    itcEligibility: 'Eligible (ITC on ceramic clay, glazes, kiln firing electricity)',
-    notes2025: 'Ceramic tableware and kitchenware classified under the 12% GST slab.',
-  },
-];
+export const HSN_DIRECTORY: HSNGuideItem[] = GST_CATALOG.map((item) => ({
+  hsnCode: item.code,
+  productCategory: `${item.name} (${item.industry})`,
+  gstRatePercent: item.ratePercent,
+  applicableItems: [item.name, item.category, item.subcategory, ...item.keywords],
+  itcEligibility: `${item.itcEligibility === 'full' ? 'Eligible (Full ITC)' : item.itcEligibility === 'nil' ? 'Nil / Exempt' : 'Partial / Conditional'} - ${item.itcDescription}`,
+  notes2025: item.notes2025,
+}));

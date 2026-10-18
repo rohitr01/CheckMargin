@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, PlusCircle, Calculator, Trash2, Search, Sparkles, Filter } from 'lucide-react';
+import { Package, PlusCircle, Calculator, Trash2, Search, Sparkles, Filter, ArrowRight } from 'lucide-react';
 
 interface SavedProduct {
   id: string;
@@ -70,7 +70,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     margin: '50.9%',
     saleableYield: '4 / 4',
     date: 'Preset Demo',
-    industryGroup: 'Resin',
+    industryGroup: 'Resin & Art',
   },
   {
     id: 'demo-6',
@@ -114,180 +114,268 @@ const DEFAULT_PRESETS: SavedProduct[] = [
     margin: '76.8%',
     saleableYield: '50 / 50',
     date: 'Preset Demo',
-    industryGroup: 'Digital',
+    industryGroup: 'Digital & Tech',
+  },
+  {
+    id: 'demo-10',
+    title: 'Jesmonite AC100 Oval Trinket Tray',
+    category: 'HSN 6815 (18% GST)',
+    unitCost: '₹174.00',
+    sellingPrice: '₹449.00',
+    margin: '54.5%',
+    saleableYield: '8 / 8',
+    date: 'Preset Demo',
+    industryGroup: 'Resin & Art',
+  },
+  {
+    id: 'demo-11',
+    title: 'Handcrafted Teak Wood Chopping Board',
+    category: 'HSN 4419 (12% GST)',
+    unitCost: '₹340.00',
+    sellingPrice: '₹899.00',
+    margin: '55.6%',
+    saleableYield: '6 / 6',
+    date: 'Preset Demo',
+    industryGroup: 'Wood & Ceramics',
+  },
+  {
+    id: 'demo-12',
+    title: 'Wheel-Thrown Stoneware Coffee Mug (350ml)',
+    category: 'HSN 6912 (12% GST)',
+    unitCost: '₹195.00',
+    sellingPrice: '₹550.00',
+    margin: '58.3%',
+    saleableYield: '10 / 12',
+    date: 'Preset Demo',
+    industryGroup: 'Wood & Ceramics',
+  },
+  {
+    id: 'demo-13',
+    title: 'Vegetable-Tanned Minimalist Leather Cardholder',
+    category: 'HSN 4202 (18% GST)',
+    unitCost: '₹280.00',
+    sellingPrice: '₹799.00',
+    margin: '58.7%',
+    saleableYield: '10 / 10',
+    date: 'Preset Demo',
+    industryGroup: 'Leather & Goods',
+  },
+  {
+    id: 'demo-14',
+    title: '3D Printable Tabletop Miniatures Pack (STL)',
+    category: 'SAC 998319 (18% GST)',
+    unitCost: '₹210.00',
+    sellingPrice: '₹1499.00',
+    margin: '82.4%',
+    saleableYield: '40 / 40',
+    date: 'Preset Demo',
+    industryGroup: 'Digital & Tech',
   },
 ];
 
-const FILTER_CATEGORIES = [
-  'All',
+const INDUSTRY_FILTERS = [
+  'All Categories',
   'Candles',
   'Soaps',
   'Bakery',
   'Cosmetics',
-  'Resin',
+  'Resin & Art',
   'Jewellery',
   'Apparel',
   'Food',
-  'Digital',
+  'Wood & Ceramics',
+  'Leather & Goods',
+  'Digital & Tech',
 ];
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<SavedProduct[]>(DEFAULT_PRESETS);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [products, setProducts] = useState<SavedProduct[]>([]);
+  const [search, setSearch] = useState('');
+  const [selectedIndustry, setSelectedIndustry] = useState('All Categories');
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products');
-      if (stored) {
-        const parsed: SavedProduct[] = JSON.parse(stored);
-        if (parsed.length > 0) {
-          setProducts([...parsed, ...DEFAULT_PRESETS]);
-        }
+    const saved = localStorage.getItem('makermargin_products');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProducts(parsed.length > 0 ? parsed : DEFAULT_PRESETS);
+      } catch {
+        setProducts(DEFAULT_PRESETS);
       }
-    } catch {
-      // ignore
+    } else {
+      setProducts(DEFAULT_PRESETS);
     }
   }, []);
 
-  function deleteProduct(id: string) {
+  function handleDelete(id: string) {
     const updated = products.filter((p) => p.id !== id);
     setProducts(updated);
-    try {
-      const stored = JSON.parse(localStorage.getItem('checkmargin_products') || localStorage.getItem('makermargin_products') || '[]');
-      const filtered = stored.filter((p: any) => p.id !== id);
-      localStorage.setItem('checkmargin_products', JSON.stringify(filtered));
-    } catch {
-      // ignore
-    }
+    localStorage.setItem('makermargin_products', JSON.stringify(updated));
+  }
+
+  function handleResetDemo() {
+    setProducts(DEFAULT_PRESETS);
+    localStorage.setItem('makermargin_products', JSON.stringify(DEFAULT_PRESETS));
   }
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
-      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedFilter === 'All' || p.industryGroup === selectedFilter || p.title.toLowerCase().includes(selectedFilter.toLowerCase());
-    return matchesSearch && matchesCategory;
+      p.title.toLowerCase().includes(search.toLowerCase()) ||
+      p.category.toLowerCase().includes(search.toLowerCase());
+    const matchesIndustry =
+      selectedIndustry === 'All Categories' || p.industryGroup === selectedIndustry;
+    return matchesSearch && matchesIndustry;
   });
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
+          <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 rounded-full px-3 py-1 text-xs font-semibold text-indigo-700 mb-2">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Universal Maker Formula Archive</span>
+            <span>Product Catalog & Recipe Library</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Saved Product Library</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Manage your formulas across candle making, bakery, skincare, apparel, resin crafts, and digital downloads.
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Saved Products</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Browse, manage, and benchmark unit economics across all your craft and digital verticals.
           </p>
         </div>
-        <Link
-          href="/calculator"
-          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>New Product Costing</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleResetDemo}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 bg-white border border-slate-300 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+          >
+            Reset Pre-filled Presets
+          </button>
+          <Link
+            href="/calculator"
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>New Costing</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Search & Category Filter Toolbar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            placeholder="Search saved products by title, category, or HSN code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      {/* Filter and Search Bar */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search products by title, HSN code, or tax rate..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span>Showing {filteredProducts.length} of {products.length} products</span>
+          </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {FILTER_CATEGORIES.map((cat) => (
+        {/* Industry Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
+          {INDUSTRY_FILTERS.map((ind) => (
             <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedFilter(cat)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                selectedFilter === cat
-                  ? 'bg-indigo-600 text-white shadow-2xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              key={ind}
+              onClick={() => setSelectedIndustry(ind)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+                selectedIndustry === ind
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {cat}
+              {ind}
             </button>
           ))}
         </div>
       </div>
 
       {/* Product Grid */}
-      <div className="grid md:grid-cols-3 gap-5">
-        {filteredProducts.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white border-2 border-slate-200 hover:border-indigo-400 rounded-2xl p-6 shadow-xs transition-all flex flex-col justify-between"
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center">
+          <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="font-bold text-slate-900 text-lg mb-1">No products found</h3>
+          <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+            No products matched your search or category filter. Try clearing filters or create a new batch.
+          </p>
+          <button
+            onClick={() => {
+              setSearch('');
+              setSelectedIndustry('All Categories');
+            }}
+            className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl transition-colors"
           >
-            <div>
-              <div className="flex items-center justify-between text-xs mb-2">
-                <span className="font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-                  {item.category}
+            Clear All Filters
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredProducts.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white border border-slate-200 hover:border-indigo-400 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                    {p.industryGroup || 'General'}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {p.date}
+                  </span>
+                </div>
+
+                <h3 className="font-bold text-slate-900 text-base leading-snug mb-1 group-hover:text-indigo-600 transition-colors">
+                  {p.title}
+                </h3>
+                <span className="inline-block text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md mb-4">
+                  {p.category}
                 </span>
-                <span className="text-slate-400 font-medium">{item.date}</span>
-              </div>
-              <h3 className="font-black text-slate-900 text-base mb-4 mt-2">{item.title}</h3>
 
-              <div className="space-y-2 text-xs border-t border-slate-100 pt-3 text-slate-600">
-                <div className="flex justify-between">
-                  <span>Unit True Cost:</span>
-                  <strong className="text-slate-900 font-bold">{item.unitCost}</strong>
+                <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Cost</span>
+                    <span className="text-xs font-black text-slate-900">{p.unitCost}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Price</span>
+                    <span className="text-xs font-black text-slate-900">{p.sellingPrice}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Margin</span>
+                    <span className="text-xs font-black text-emerald-600">{p.margin}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Selling Price:</span>
-                  <strong className="text-slate-900 font-bold">{item.sellingPrice}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Gross Margin:</span>
-                  <strong className="text-emerald-700 font-bold">{item.margin}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Yield Efficiency:</span>
-                  <span className="font-semibold text-slate-700">{item.saleableYield} units</span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Yield: <strong className="text-slate-800">{p.saleableYield}</strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="Delete product"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <Link
+                    href="/calculator"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    <span>Recalculate</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
             </div>
-
-            <div className="pt-6 mt-4 border-t border-slate-100 flex items-center gap-2">
-              <Link
-                href="/calculator"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-bold text-xs py-2.5 px-3 rounded-xl border border-slate-200 transition-colors"
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span>Open in Studio</span>
-              </Link>
-              {!item.id.startsWith('demo-') && (
-                <button
-                  onClick={() => deleteProduct(item.id)}
-                  className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500">
-          <p className="text-base font-bold text-slate-700">No products match your filter criteria.</p>
-          <p className="text-xs mt-1">Try selecting &apos;All&apos; or clearing your search keywords.</p>
+          ))}
         </div>
       )}
     </div>
