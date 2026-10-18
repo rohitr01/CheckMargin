@@ -2,243 +2,23 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Calculator, ArrowRight, TrendingUp, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calculator, ArrowRight, TrendingUp, Sparkles, AlertCircle, CheckCircle2, Sliders } from 'lucide-react';
 import { calculateBatchCost, CHANNEL_PRESETS, type BatchInput } from '@/lib/calculator';
-
-const PRESETS = [
-  {
-    id: 'candle',
-    name: 'Soy Jar Candle',
-    icon: '🕯️',
-    price: 599,
-    channel: 'amazon',
-    input: {
-      productName: 'Soy Fragrance Candle 200g',
-      hsnCode: '3406',
-      materials: [
-        { name: 'Soy Wax', packPrice: 850, packSize: 1000, packUnit: 'g', qtyUsed: 1800, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Fragrance Oil', packPrice: 1400, packSize: 100, packUnit: 'ml', qtyUsed: 120, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Glass Jar', packPrice: 700, packSize: 20, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Wick & Label', packPrice: 350, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 10,
-      failedUnits: 1,
-      labourMinutes: 90,
-      labourHourlyRate: 150,
-      packagingPerUnit: 25,
-      overheadPerBatch: 50,
-      sellingPrice: 599,
-      platformFeePercent: 12,
-      platformFeeFixed: 15,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 65,
-      adSpendPerUnit: 40,
-      rtoRatePercent: 8,
-      rtoLossPerReturn: 90,
-      isGSTRegistered: true,
-      claimITC: true,
-      supplyType: 'intra-state' as const,
-      outputGSTRatePercent: 5,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-  {
-    id: 'soap',
-    name: 'Cold Process Soap',
-    icon: '🧼',
-    price: 299,
-    channel: 'shopify',
-    input: {
-      productName: 'Honey & Oat Cold Process Soap',
-      hsnCode: '3401',
-      materials: [
-        { name: 'Olive & Coconut Oil', packPrice: 650, packSize: 1000, packUnit: 'ml', qtyUsed: 800, gstRatePercent: 5, isPackPriceGSTInclusive: true },
-        { name: 'Lye (NaOH)', packPrice: 180, packSize: 500, packUnit: 'g', qtyUsed: 120, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Raw Honey & Oats', packPrice: 250, packSize: 250, packUnit: 'g', qtyUsed: 60, gstRatePercent: 5, isPackPriceGSTInclusive: true },
-        { name: 'Essential Oil', packPrice: 900, packSize: 100, packUnit: 'ml', qtyUsed: 30, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 12,
-      failedUnits: 1,
-      labourMinutes: 120,
-      labourHourlyRate: 150,
-      packagingPerUnit: 18,
-      overheadPerBatch: 40,
-      sellingPrice: 299,
-      platformFeePercent: 2,
-      platformFeeFixed: 3,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 55,
-      adSpendPerUnit: 25,
-      rtoRatePercent: 4,
-      rtoLossPerReturn: 70,
-      isGSTRegistered: true,
-      claimITC: true,
-      supplyType: 'intra-state' as const,
-      outputGSTRatePercent: 5,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-  {
-    id: 'jesmonite',
-    name: 'Jesmonite Oval Tray',
-    icon: '🎨',
-    price: 649,
-    channel: 'amazon',
-    input: {
-      productName: 'Jesmonite AC100 Terrazzo Tray',
-      hsnCode: '6815',
-      materials: [
-        { name: 'Jesmonite AC100 Base & Liquid', packPrice: 2200, packSize: 3500, packUnit: 'g', qtyUsed: 1800, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Pigment Paste & Chips', packPrice: 450, packSize: 100, packUnit: 'g', qtyUsed: 40, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Acrylic Food-Safe Sealer', packPrice: 600, packSize: 500, packUnit: 'ml', qtyUsed: 100, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Cork Backing Footers', packPrice: 120, packSize: 20, packUnit: 'piece', qtyUsed: 6, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 6,
-      failedUnits: 1,
-      labourMinutes: 100,
-      labourHourlyRate: 150,
-      packagingPerUnit: 35,
-      overheadPerBatch: 60,
-      sellingPrice: 649,
-      platformFeePercent: 12,
-      platformFeeFixed: 15,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 70,
-      adSpendPerUnit: 50,
-      rtoRatePercent: 6,
-      rtoLossPerReturn: 95,
-      isGSTRegistered: true,
-      claimITC: true,
-      supplyType: 'intra-state' as const,
-      outputGSTRatePercent: 18,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-  {
-    id: 'bakery',
-    name: 'Artisan Babka Loaf',
-    icon: '🧁',
-    price: 499,
-    channel: 'shopify',
-    input: {
-      productName: 'Valrhona Chocolate Babka',
-      hsnCode: '1905',
-      materials: [
-        { name: 'Organic Flour & Yeast', packPrice: 320, packSize: 2000, packUnit: 'g', qtyUsed: 1200, gstRatePercent: 5, isPackPriceGSTInclusive: true },
-        { name: 'French Butter 82%', packPrice: 650, packSize: 500, packUnit: 'g', qtyUsed: 350, gstRatePercent: 12, isPackPriceGSTInclusive: true },
-        { name: 'Dark Chocolate Callets', packPrice: 950, packSize: 1000, packUnit: 'g', qtyUsed: 400, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Farm Eggs & Sugar', packPrice: 200, packSize: 10, packUnit: 'piece', qtyUsed: 6, gstRatePercent: 0, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 6,
-      failedUnits: 0,
-      labourMinutes: 90,
-      labourHourlyRate: 150,
-      packagingPerUnit: 25,
-      overheadPerBatch: 50,
-      sellingPrice: 499,
-      platformFeePercent: 2,
-      platformFeeFixed: 3,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 50,
-      adSpendPerUnit: 30,
-      rtoRatePercent: 2,
-      rtoLossPerReturn: 60,
-      isGSTRegistered: false,
-      claimITC: false,
-      supplyType: 'intra-state' as const,
-      outputGSTRatePercent: 5,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-  {
-    id: 'cosmetics',
-    name: 'Vitamin C Serum',
-    icon: '🧴',
-    price: 699,
-    channel: 'amazon',
-    input: {
-      productName: 'Vitamin C Face Serum 30ml',
-      hsnCode: '3304',
-      materials: [
-        { name: 'Active Vit C Powder', packPrice: 1200, packSize: 100, packUnit: 'g', qtyUsed: 30, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Hyaluronic Base', packPrice: 1600, packSize: 500, packUnit: 'ml', qtyUsed: 250, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Glass Dropper Bottle', packPrice: 550, packSize: 20, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Waterproof Label', packPrice: 180, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 10,
-      failedUnits: 0,
-      labourMinutes: 60,
-      labourHourlyRate: 200,
-      packagingPerUnit: 28,
-      overheadPerBatch: 50,
-      sellingPrice: 699,
-      platformFeePercent: 12,
-      platformFeeFixed: 15,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 65,
-      adSpendPerUnit: 40,
-      rtoRatePercent: 8,
-      rtoLossPerReturn: 95,
-      isGSTRegistered: true,
-      claimITC: true,
-      supplyType: 'intra-state' as const,
-      outputGSTRatePercent: 18,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-  {
-    id: 'digital',
-    name: 'Notion OS Template',
-    icon: '💻',
-    price: 999,
-    channel: 'gumroad',
-    input: {
-      productName: 'Notion Life & Business OS Template',
-      productType: 'digital' as const,
-      hsnCode: '9984',
-      materials: [
-        { name: 'Notion Plus & AI Allocation', packPrice: 1500, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Canva Pro Mockup Licenses', packPrice: 499, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Loom Video Hosting', packPrice: 850, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
-      ],
-      batchSize: 50,
-      failedUnits: 0,
-      labourMinutes: 240,
-      labourHourlyRate: 250,
-      packagingPerUnit: 0,
-      overheadPerBatch: 0,
-      sellingPrice: 999,
-      platformFeePercent: 10,
-      platformFeeFixed: 0,
-      gstOnPlatformFeePercent: 18,
-      shippingPerOrder: 0,
-      adSpendPerUnit: 50,
-      rtoRatePercent: 0,
-      rtoLossPerReturn: 0,
-      isGSTRegistered: true,
-      claimITC: true,
-      supplyType: 'inter-state' as const,
-      outputGSTRatePercent: 18,
-      isPriceGSTInclusive: true,
-      monthlyFixedCost: 15000,
-    },
-  },
-];
+import { BUSINESS_CATEGORIES, BusinessCategory } from '@/lib/business-categories';
 
 export default function HeroMiniCalculator() {
-  const [activePreset, setActivePreset] = useState(PRESETS[0]);
-  const [sellingPrice, setSellingPrice] = useState(PRESETS[0].price);
-  const [selectedChannel, setSelectedChannel] = useState(PRESETS[0].channel);
+  const [activeCategory, setActiveCategory] = useState<BusinessCategory>(BUSINESS_CATEGORIES[0]);
+  const [sellingPrice, setSellingPrice] = useState(BUSINESS_CATEGORIES[0].starterInput.sellingPrice);
+  const [selectedChannel, setSelectedChannel] = useState(BUSINESS_CATEGORIES[0].starterInput.channelId || 'amazon');
+  
+  // Custom category product name for the simulator
+  const [customProductName, setCustomProductName] = useState('Custom Studio Batch');
 
   const channelPreset = CHANNEL_PRESETS.find((c) => c.id === selectedChannel) || CHANNEL_PRESETS[0];
 
   const currentInput: BatchInput = {
-    ...activePreset.input,
+    ...activeCategory.starterInput,
+    productName: activeCategory.id === 'custom' ? customProductName : activeCategory.starterInput.productName,
     sellingPrice: sellingPrice,
     channelId: channelPreset.id,
     platformFeePercent: channelPreset.feePercent,
@@ -249,10 +29,10 @@ export default function HeroMiniCalculator() {
 
   const result = calculateBatchCost(currentInput);
 
-  function handlePresetChange(p: typeof PRESETS[0]) {
-    setActivePreset(p);
-    setSellingPrice(p.price);
-    setSelectedChannel(p.channel);
+  function handleCategoryChange(cat: BusinessCategory) {
+    setActiveCategory(cat);
+    setSellingPrice(cat.starterInput.sellingPrice);
+    setSelectedChannel(cat.starterInput.channelId || 'amazon');
   }
 
   const isProfitable = result.grossProfitPerUnit > 0;
@@ -264,32 +44,40 @@ export default function HeroMiniCalculator() {
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md mb-2">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Interactive Live Simulator</span>
+            <span>Interactive Business Costing Simulator</span>
           </div>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">
-            See CheckMargin in Action
+            See Unit Economics by Business Type
           </h3>
           <p className="text-xs text-slate-500">
-            Pick a craft product and test how scrap yield, labour, and marketplace fees shape true unit profit.
+            Select a broad category or customize your own to test how batch yield, labour, and marketplace fees shape true profit.
           </p>
         </div>
 
-        {/* Preset Pills */}
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => handlePresetChange(p)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                activePreset.id === p.id
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              <span>{p.icon}</span>
-              <span>{p.name}</span>
-            </button>
-          ))}
+        {/* Category Pills (Broad categories with Candles & Fragrance prominent) */}
+        <div className="flex flex-wrap gap-1.5">
+          {BUSINESS_CATEGORIES.map((cat) => {
+            const isActive = activeCategory.id === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryChange(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isActive
+                    ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-600/20'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.shortName}</span>
+                {cat.badge && (
+                  <span className={`text-[9px] px-1 py-0.2 rounded font-black ${isActive ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
+                    {cat.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -297,6 +85,32 @@ export default function HeroMiniCalculator() {
       <div className="grid md:grid-cols-12 gap-6 pt-6">
         {/* Left Controls (5 cols) */}
         <div className="md:col-span-5 space-y-5">
+          {/* Active Product Name display or custom input */}
+          {activeCategory.id === 'custom' ? (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Your Custom Product Name
+              </label>
+              <input
+                type="text"
+                value={customProductName}
+                onChange={(e) => setCustomProductName(e.target.value)}
+                placeholder="e.g. 3D-Printed Dice Towers or Leather Wallets"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ) : (
+            <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
+                  Demonstration Recipe ({activeCategory.name})
+                </span>
+                <span className="text-sm font-black text-slate-900">{activeCategory.starterInput.productName}</span>
+              </div>
+              <span className="text-xl">{activeCategory.icon}</span>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
               <label>Customer Selling Price</label>
@@ -304,17 +118,17 @@ export default function HeroMiniCalculator() {
             </div>
             <input
               type="range"
-              min={Math.round(result.totalDirectCostPerUnit * 0.8)}
-              max={Math.round(result.totalDirectCostPerUnit * 3.5)}
+              min={Math.max(50, Math.round(result.totalDirectCostPerUnit * 0.8))}
+              max={Math.max(200, Math.round(result.totalDirectCostPerUnit * 3.5))}
               step={10}
               value={sellingPrice}
               onChange={(e) => setSellingPrice(Number(e.target.value))}
               className="w-full accent-indigo-600 cursor-pointer"
             />
             <div className="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>Low (₹{Math.round(result.totalDirectCostPerUnit * 0.8)})</span>
+              <span>Low (₹{Math.max(50, Math.round(result.totalDirectCostPerUnit * 0.8))})</span>
               <span>Target (₹{sellingPrice})</span>
-              <span>High (₹{Math.round(result.totalDirectCostPerUnit * 3.5)})</span>
+              <span>High (₹{Math.max(200, Math.round(result.totalDirectCostPerUnit * 3.5))})</span>
             </div>
           </div>
 
@@ -341,19 +155,23 @@ export default function HeroMiniCalculator() {
           <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
             <div className="flex justify-between">
               <span>Batch Run Size:</span>
-              <strong className="text-slate-900">{activePreset.input.batchSize} units</strong>
+              <strong className="text-slate-900">{activeCategory.starterInput.batchSize} units</strong>
             </div>
             <div className="flex justify-between">
-              <span>Quality Rejections (Defects):</span>
-              <span className="text-rose-600 font-semibold">{activePreset.input.failedUnits} unit ({result.yieldEfficiencyPercent.toFixed(0)}% yield)</span>
+              <span>Defect Scrap Rate:</span>
+              <span className="text-rose-600 font-semibold">{activeCategory.starterInput.failedUnits} unit ({result.yieldEfficiencyPercent.toFixed(0)}% yield)</span>
             </div>
             <div className="flex justify-between">
               <span>Direct Craft Labour:</span>
-              <strong className="text-slate-900">{activePreset.input.labourMinutes} mins (@ ₹{activePreset.input.labourHourlyRate}/hr)</strong>
+              <strong className="text-slate-900">{activeCategory.starterInput.labourMinutes} mins (@ ₹{activeCategory.starterInput.labourHourlyRate}/hr)</strong>
             </div>
             <div className="flex justify-between">
               <span>GST Status:</span>
-              <strong className="text-slate-900">{activePreset.input.isGSTRegistered ? `HSN ${activePreset.input.hsnCode} (${activePreset.input.outputGSTRatePercent}%)` : 'Unregistered'}</strong>
+              <strong className="text-slate-900">
+                {activeCategory.starterInput.isGSTRegistered
+                  ? `HSN/SAC ${activeCategory.starterInput.hsnCode || '3406'} (${activeCategory.starterInput.outputGSTRatePercent}%)`
+                  : 'Unregistered'}
+              </strong>
             </div>
           </div>
         </div>
@@ -413,10 +231,10 @@ export default function HeroMiniCalculator() {
 
           {/* Launch Link */}
           <Link
-            href="/calculator"
-            className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:gap-3"
+            href={`/calculator?category=${activeCategory.id}`}
+            className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:gap-3 cursor-pointer"
           >
-            <span>Open This Recipe in Full Batch Studio</span>
+            <span>Open {activeCategory.name} in Full Batch Studio</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

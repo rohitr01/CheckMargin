@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Receipt,
   Truck,
+  Settings,
 } from 'lucide-react';
 import UserNav from '@/components/UserNav';
 
@@ -16,6 +17,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Workspace Dashboard' },
   { href: '/calculator', icon: Calculator, label: 'Batch Calculator' },
   { href: '/products', icon: Package, label: 'Saved Products' },
+  { href: '/settings', icon: Settings, label: 'Studio & Category' },
   { href: '/gst-guide', icon: Receipt, label: 'GST & HSN Guide' },
   { href: '/compare', icon: Truck, label: 'Compare Couriers' },
 ];

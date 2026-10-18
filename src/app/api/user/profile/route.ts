@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/server';
 import { sql } from '@/lib/db';
+import { getBusinessCategory } from '@/lib/business-categories';
 
 export async function GET() {
   try {
@@ -22,8 +23,14 @@ export async function GET() {
         email,
         display_name,
         business_name,
-        COALESCE(primary_industry, primary_category, 'General') as primary_industry,
-        COALESCE(primary_category, primary_industry, 'General') as primary_category,
+        COALESCE(primary_industry, primary_category, 'Candles & Fragrance') as primary_industry,
+        COALESCE(primary_category, primary_industry, 'Candles & Fragrance') as primary_category,
+        COALESCE(business_category_id, 'candles-fragrance') as business_category_id,
+        COALESCE(is_custom_category, false) as is_custom_category,
+        custom_category_name,
+        custom_category_desc,
+        custom_product_or_service,
+        COALESCE(custom_product_type, 'physical') as custom_product_type,
         COALESCE(plan, 'free') as plan,
         created_at,
         updated_at
@@ -36,7 +43,7 @@ export async function GET() {
       return NextResponse.json({ profile: existing[0], user: session.user });
     }
 
-    // Insert new profile record with both auth_user_id and neon_user_id populated
+    // Insert new profile record with default Candles & Fragrance
     const inserted = await sql`
       INSERT INTO user_profiles (
         auth_user_id,
@@ -45,6 +52,8 @@ export async function GET() {
         display_name,
         primary_category,
         primary_industry,
+        business_category_id,
+        is_custom_category,
         plan
       )
       VALUES (
@@ -52,8 +61,10 @@ export async function GET() {
         ${userId},
         ${email},
         ${name},
-        'General',
-        'General',
+        'Candles & Fragrance',
+        'Candles & Fragrance',
+        'candles-fragrance',
+        false,
         'free'
       )
       ON CONFLICT (auth_user_id) DO UPDATE
@@ -67,8 +78,14 @@ export async function GET() {
         email,
         display_name,
         business_name,
-        COALESCE(primary_industry, primary_category, 'General') as primary_industry,
-        COALESCE(primary_category, primary_industry, 'General') as primary_category,
+        COALESCE(primary_industry, primary_category, 'Candles & Fragrance') as primary_industry,
+        COALESCE(primary_category, primary_industry, 'Candles & Fragrance') as primary_category,
+        COALESCE(business_category_id, 'candles-fragrance') as business_category_id,
+        COALESCE(is_custom_category, false) as is_custom_category,
+        custom_category_name,
+        custom_category_desc,
+        custom_product_or_service,
+        COALESCE(custom_product_type, 'physical') as custom_product_type,
         COALESCE(plan, 'free') as plan,
         created_at,
         updated_at
@@ -92,9 +109,28 @@ export async function POST(req: Request) {
     const userId = session.user.id;
     const email = session.user.email || '';
     const body = await req.json();
+
     const displayName = body.displayName?.trim() ?? session.user.name ?? '';
     const businessName = body.businessName?.trim() ?? '';
-    const primaryIndustry = body.primaryIndustry?.trim() ?? 'Candles';
+
+    // Business category handling
+    const rawCategoryId = body.businessCategoryId || body.primaryIndustry || 'candles-fragrance';
+    const isCustom = Boolean(body.isCustomCategory || rawCategoryId === 'custom');
+    const customCategoryName = body.customCategoryName?.trim() || null;
+    const customCategoryDesc = body.customCategoryDesc?.trim() || null;
+    const customProductOrService = body.customProductOrService?.trim() || null;
+    const customProductType = body.customProductType === 'digital' ? 'digital' : 'physical';
+
+    // Resolve human-readable category name
+    let primaryIndustryName = 'Candles & Fragrance';
+    if (isCustom && customCategoryName) {
+      primaryIndustryName = customCategoryName;
+    } else {
+      const cat = getBusinessCategory(rawCategoryId);
+      primaryIndustryName = cat.name;
+    }
+
+    const businessCategoryId = isCustom ? 'custom' : getBusinessCategory(rawCategoryId).id;
 
     const result = await sql`
       INSERT INTO user_profiles (
@@ -105,6 +141,12 @@ export async function POST(req: Request) {
         business_name,
         primary_category,
         primary_industry,
+        business_category_id,
+        is_custom_category,
+        custom_category_name,
+        custom_category_desc,
+        custom_product_or_service,
+        custom_product_type,
         plan,
         updated_at
       )
@@ -114,8 +156,14 @@ export async function POST(req: Request) {
         ${email},
         ${displayName},
         ${businessName},
-        ${primaryIndustry},
-        ${primaryIndustry},
+        ${primaryIndustryName},
+        ${primaryIndustryName},
+        ${businessCategoryId},
+        ${isCustom},
+        ${customCategoryName},
+        ${customCategoryDesc},
+        ${customProductOrService},
+        ${customProductType},
         'free',
         NOW()
       )
@@ -125,6 +173,12 @@ export async function POST(req: Request) {
           business_name = EXCLUDED.business_name,
           primary_category = EXCLUDED.primary_category,
           primary_industry = EXCLUDED.primary_industry,
+          business_category_id = EXCLUDED.business_category_id,
+          is_custom_category = EXCLUDED.is_custom_category,
+          custom_category_name = EXCLUDED.custom_category_name,
+          custom_category_desc = EXCLUDED.custom_category_desc,
+          custom_product_or_service = EXCLUDED.custom_product_or_service,
+          custom_product_type = EXCLUDED.custom_product_type,
           email = COALESCE(NULLIF(EXCLUDED.email, ''), user_profiles.email),
           updated_at = NOW()
       RETURNING 
@@ -136,6 +190,12 @@ export async function POST(req: Request) {
         business_name,
         primary_industry,
         primary_category,
+        business_category_id,
+        is_custom_category,
+        custom_category_name,
+        custom_category_desc,
+        custom_product_or_service,
+        custom_product_type,
         COALESCE(plan, 'free') as plan,
         updated_at
     `;

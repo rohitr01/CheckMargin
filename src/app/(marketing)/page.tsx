@@ -6,27 +6,13 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle2,
-  ShieldCheck,
-  ShoppingBag,
   Sparkles,
   Layers,
   Coins,
-  PackageCheck,
   Sliders,
-  Receipt,
-  Store,
 } from 'lucide-react';
 
-const niches = [
-  { icon: '🕯️', title: 'Candle Makers', desc: 'Soy, beeswax, aroma jars & wax melts' },
-  { icon: '🧼', title: 'Soaps & Skincare', desc: 'Cold-process, melt & pour, body butters' },
-  { icon: '🎨', title: 'Resin & Jesmonite', desc: 'Coasters, trays, art pieces, casting' },
-  { icon: '🧁', title: 'Bakery & Food', desc: 'Cakes, pastries, granolas, artisanal snacks' },
-  { icon: '🧴', title: 'Cosmetics Brands', desc: 'Organic serums, perfumes, balms' },
-  { icon: '🧵', title: 'Textile & Apparel', desc: 'Embroidered wear, scrunchies, tote bags' },
-  { icon: '🪵', title: 'Home Decor & Pottery', desc: 'Ceramic mugs, plaster pots, wooden art' },
-  { icon: '🍫', title: 'Small Manufacturers', desc: 'Any batch-produced consumer product' },
-];
+import { BUSINESS_CATEGORIES } from '@/lib/business-categories';
 
 const painPoints = [
   {
@@ -125,26 +111,69 @@ export default function HomePage() {
       {/* Target Categories Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2">Designed For All Small-Batch Products</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2">Designed For Every Business Model</div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            If you make products in batches, CheckMargin was built for you
+            Select Your Business Category
           </h2>
           <p className="mt-3 text-slate-600">
-            Whether you blend, pour, bake, cast, sew, or assemble — recipe-to-batch costing gives you the clarity generic spreadsheets never can.
+            CheckMargin adapts to your exact production workflow — whether physical, handmade, baked, or digital.
+            Pick a starter template below or define your own custom category.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {niches.map((n) => (
-            <div
-              key={n.title}
-              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs hover:border-indigo-400 hover:shadow-md transition-all group"
-            >
-              <div className="text-3xl mb-3.5 group-hover:scale-110 transition-transform">{n.icon}</div>
-              <h3 className="font-bold text-slate-900 text-lg mb-1">{n.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{n.desc}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {BUSINESS_CATEGORIES.map((cat) => {
+            const isCandle = cat.id === 'candles-fragrance';
+            const isCustom = cat.id === 'custom';
+            return (
+              <Link
+                key={cat.id}
+                href={`/calculator?category=${cat.id}`}
+                className={`bg-white border-2 rounded-2xl p-6 shadow-xs hover:border-indigo-500 hover:shadow-lg transition-all group relative flex flex-col justify-between ${
+                  isCandle
+                    ? 'border-indigo-400 ring-2 ring-indigo-500/10'
+                    : 'border-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
+                    {cat.badge && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                        {cat.badge}
+                      </span>
+                    )}
+                    {isCustom && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                        Flexible / Custom
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-lg mb-1 group-hover:text-indigo-600 transition-colors">
+                    {cat.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                    {cat.tagline}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {cat.exampleProducts.slice(0, 3).map((ex) => (
+                      <span
+                        key={ex}
+                        className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md"
+                      >
+                        {ex}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-indigo-600 group-hover:text-indigo-700">
+                  <span>{isCustom ? 'Create Custom Recipe' : 'Launch with this template'}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

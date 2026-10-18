@@ -3,8 +3,9 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Calculator, ArrowRight, User, Mail, Lock, Building, Loader2, AlertCircle } from 'lucide-react';
+import { Calculator, ArrowRight, User, Mail, Lock, Building, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { authClient } from '@/lib/auth/client';
+import { BUSINESS_CATEGORIES } from '@/lib/business-categories';
 
 function getSafeRedirect(url: string | null): string {
   if (!url || typeof url !== 'string') return '/dashboard';
@@ -19,12 +20,24 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get('redirect');
+  const initialCategoryParam = searchParams.get('category');
   const safeRedirectUrl = getSafeRedirect(rawRedirect);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [primaryIndustry, setPrimaryIndustry] = useState('Candles');
+  
+  // Business category selection
+  const [selectedCategoryId, setSelectedCategoryId] = useState(
+    initialCategoryParam && BUSINESS_CATEGORIES.some((c) => c.id === initialCategoryParam)
+      ? initialCategoryParam
+      : 'candles-fragrance'
+  );
+  const [isCustomCategory, setIsCustomCategory] = useState(initialCategoryParam === 'custom');
+  const [customName, setCustomName] = useState('');
+  const [customDesc, setCustomDesc] = useState('');
+  const [customProductType, setCustomProductType] = useState<'physical' | 'digital'>('physical');
+
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +56,10 @@ function SignupForm() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (isCustomCategory && !customName.trim()) {
+      setError('Please enter a name for your custom business category.');
       return;
     }
 
@@ -69,7 +86,11 @@ function SignupForm() {
           body: JSON.stringify({
             displayName: name.trim(),
             businessName: businessName.trim() || undefined,
-            primaryIndustry,
+            businessCategoryId: isCustomCategory ? 'custom' : selectedCategoryId,
+            isCustomCategory,
+            customCategoryName: isCustomCategory ? customName.trim() : null,
+            customCategoryDesc: isCustomCategory ? customDesc.trim() : null,
+            customProductType: isCustomCategory ? customProductType : 'physical',
           }),
         });
         if (!profileRes.ok) {
@@ -91,7 +112,7 @@ function SignupForm() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 w-full max-w-md shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 w-full max-w-lg shadow-sm my-8">
         {/* Brand */}
         <Link href="/" className="inline-flex items-center gap-2 mb-8 group">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/25">
@@ -102,7 +123,7 @@ function SignupForm() {
           </span>
         </Link>
 
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Create free account</h1>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Create free studio account</h1>
         <p className="text-xs text-slate-500 mb-6">Start knowing your true product unit economics today</p>
 
         {error && (
@@ -163,27 +184,86 @@ function SignupForm() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Primary Product Category
-            </label>
+          {/* Business Category Question */}
+          <div className="pt-1">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                What type of business do you run?
+              </label>
+              <span className="text-[11px] text-slate-400 font-medium">Editable anytime</span>
+            </div>
+
             <select
-              value={primaryIndustry}
-              onChange={(e) => setPrimaryIndustry(e.target.value)}
+              value={isCustomCategory ? 'custom' : selectedCategoryId}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'custom') {
+                  setIsCustomCategory(true);
+                  setSelectedCategoryId('custom');
+                } else {
+                  setIsCustomCategory(false);
+                  setSelectedCategoryId(val);
+                }
+              }}
               className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs"
             >
-              <option value="Candles">🕯️ Candles & Wax Melts</option>
-              <option value="Soaps">🧼 Soaps, Bath & Body</option>
-              <option value="Resin & Art">🎨 Resin, Jesmonite & Decor</option>
-              <option value="Bakery">🧁 Bakery, Confectionery & Food</option>
-              <option value="Cosmetics">🧴 Organic Cosmetics & Skincare</option>
-              <option value="Jewellery">💍 Handmade Jewellery</option>
-              <option value="Apparel">🧵 Clothing, Embroidery & Textiles</option>
-              <option value="Wood & Ceramics">🪵 Wood, Pottery & Handmade Crafts</option>
-              <option value="Digital & Tech">💻 Digital Goods, Templates & 3D STLs</option>
-              <option value="Other">📦 Other Batch-Manufactured Products</option>
+              {BUSINESS_CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name} {cat.id === 'candles-fragrance' ? '(Prominent)' : ''}
+                </option>
+              ))}
             </select>
           </div>
+
+          {/* Custom Category Form (Expands when Other / Custom is chosen) */}
+          {isCustomCategory && (
+            <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-2xl space-y-3 mt-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Custom Business Setup</span>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Business / Industry Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. 3D-Printed Miniatures or Custom Leather"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Delivery Type
+                  </label>
+                  <select
+                    value={customProductType}
+                    onChange={(e) => setCustomProductType(e.target.value as 'physical' | 'digital')}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="physical">📦 Physical Product</option>
+                    <option value="digital">💻 Digital Asset</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Description (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customDesc}
+                    onChange={(e) => setCustomDesc(e.target.value)}
+                    placeholder="Short description"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
@@ -206,7 +286,7 @@ function SignupForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer mt-4"
           >
             {loading ? (
               <>

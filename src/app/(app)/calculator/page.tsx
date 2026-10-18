@@ -2,7 +2,8 @@
 
 import { HSN_ALL_PRESETS, SAC_ALL_PRESETS } from '@/lib/gst-directory';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   calculateBatchCost,
   suggestPrices,
@@ -12,8 +13,14 @@ import {
   HSN_DIRECTORY,
   type BatchInput,
   type CalculationResult,
+  type Material,
   CHANNEL_PRESETS,
 } from '@/lib/calculator';
+import {
+  BUSINESS_CATEGORIES,
+  getBusinessCategory,
+  type BusinessCategory,
+} from '@/lib/business-categories';
 import {
   Calculator,
   Plus,
@@ -495,12 +502,55 @@ const PHYSICAL_PRESETS = [
   },
 ];
 
-export default function CalculatorPage() {
+const BLANK_MATERIAL = {
+  name: '',
+  packPrice: 0,
+  packSize: 1,
+  packUnit: 'g',
+  qtyUsed: 0,
+  gstRatePercent: 18,
+  isPackPriceGSTInclusive: true,
+};
+
+const BLANK_FORM: BatchInput = {
+  productName: '',
+  productType: 'physical',
+  hsnCode: '',
+  materials: [BLANK_MATERIAL],
+  batchSize: 10,
+  failedUnits: 0,
+  labourMinutes: 0,
+  labourHourlyRate: 150,
+  packagingPerUnit: 0,
+  overheadPerBatch: 0,
+  sellingPrice: 0,
+  channelId: 'shopify',
+  platformFeePercent: 2,
+  platformFeeFixed: 0,
+  gstOnPlatformFeePercent: 18,
+  shippingPerOrder: 0,
+  adSpendPerUnit: 0,
+  rtoRatePercent: 0,
+  rtoLossPerReturn: 0,
+  isGSTRegistered: false,
+  claimITC: false,
+  supplyType: 'intra-state',
+  outputGSTRatePercent: 18,
+  isPriceGSTInclusive: true,
+  monthlyFixedCost: 10000,
+};
+
+function CalculatorContent() {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  const productParam = searchParams.get('product');
+
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('candles-fragrance');
   const [productType, setProductType] = useState<'physical' | 'digital'>('physical');
   const [activePhysicalPresetId, setActivePhysicalPresetId] = useState<string>('candle');
   const [activeDigitalPresetId, setActiveDigitalPresetId] = useState<string>('');
   const [selectedCourier, setSelectedCourier] = useState('custom');
-  const [materials, setMaterials] = useState(INITIAL_MATERIALS);
+  const [materials, setMaterials] = useState<Material[]>(INITIAL_MATERIALS);
   const [form, setForm] = useState<BatchInput>(INITIAL_FORM);
   const [targetUnits, setTargetUnits] = useState(30);
   const [wholesaleMOQ, setWholesaleMOQ] = useState(25);
@@ -516,16 +566,54 @@ export default function CalculatorPage() {
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
 
-  // Auto calculate on mount & state changes
-  useEffect(() => {
-    recalc(form, materials);
-  }, []);
-
-  function recalc(f: BatchInput, m: typeof materials) {
+  function recalc(f: BatchInput, m: Material[]) {
     if (!f.productName.trim() || f.batchSize <= 0) return;
     const res = calculateBatchCost({ ...f, materials: m });
     setResult(res);
   }
+
+  function loadCategoryTemplate(catId: string, customTitle?: string) {
+    if (catId === 'blank') {
+      setActiveCategoryId('blank');
+      setProductType('physical');
+      setMaterials([{ ...BLANK_MATERIAL }]);
+      setForm({ ...BLANK_FORM });
+      setSelectedCourier('custom');
+      setResult(null);
+      return;
+    }
+
+    const cat = getBusinessCategory(catId);
+    setActiveCategoryId(cat.id);
+    setProductType(cat.defaultProductType);
+    const starterMaterials = cat.starterInput.materials.map((m) => ({ ...m }));
+    setMaterials(starterMaterials);
+    const updatedForm: BatchInput = {
+      ...cat.starterInput,
+      productName: customTitle || cat.starterInput.productName,
+      materials: starterMaterials,
+    };
+    setForm(updatedForm);
+    setSelectedCourier(
+      cat.starterInput.channelId === 'amazon'
+        ? 'amazon_ats'
+        : cat.defaultProductType === 'digital'
+        ? 'custom'
+        : 'shiprocket'
+    );
+    recalc(updatedForm, starterMaterials);
+  }
+
+  // Load from searchParams or default
+  useEffect(() => {
+    if (categoryParam === 'blank') {
+      loadCategoryTemplate('blank');
+    } else if (categoryParam) {
+      loadCategoryTemplate(categoryParam, productParam || undefined);
+    } else {
+      recalc(form, materials);
+    }
+  }, [categoryParam, productParam]);
 
   function handleProductTypeSwitch(type: 'physical' | 'digital') {
     setProductType(type);
@@ -1025,6 +1113,70 @@ export default function CalculatorPage() {
                 <span>💻 Digital Downloads & Software</span>
               </button>
             </div>
+          </div>
+
+          {/* Broad Business Category Bar */}
+          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  Select Business Category Starter Template:
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => loadCategoryTemplate('blank')}
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeCategoryId === 'blank'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
+                }`}
+              >
+                <span>✨ Start Blank Product</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              {BUSINESS_CATEGORIES.map((cat) => {
+                const isActive = activeCategoryId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => loadCategoryTemplate(cat.id)}
+                    className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer relative ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20'
+                        : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-base">{cat.icon}</span>
+                      {cat.badge && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          {cat.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`font-bold truncate text-[11px] ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                      {cat.name}
+                    </div>
+                    <div className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-indigo-200' : 'text-slate-500'}`}>
+                      {cat.defaultProductType === 'digital' ? 'Digital Asset' : 'Batch Production'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-2.5 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>
+                Category starter templates load initial demo values. Every material, quantity, labour, platform fee, and GST rate remains 100% customizable and independent per product.
+              </span>
+            </p>
           </div>
 
           {/* Physical Industry Presets Bar */}
@@ -2878,3 +3030,18 @@ export default function CalculatorPage() {
     </div>
   );
 }
+
+export default function CalculatorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-6xl mx-auto py-16 text-center text-slate-500 font-medium">
+          Loading Batch Cost & Pricing Calculator...
+        </div>
+      }
+    >
+      <CalculatorContent />
+    </Suspense>
+  );
+}
+
