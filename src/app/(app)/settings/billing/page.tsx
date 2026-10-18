@@ -43,16 +43,34 @@ export default function BillingPage() {
     setUpgrading(planName);
     setNotice(null);
 
-    // Demonstration of SaaS payment integration
-    // When live Razorpay/Cashfree keys are configured in .env, this triggers the checkout order modal.
-    setTimeout(() => {
-      setNotice(
-        `Razorpay checkout initialization ready for ${
-          planName === 'annual' ? 'Annual Pro (₹2,499/yr)' : 'Monthly Pro (₹299/mo)'
-        }. To activate real transactions, configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.local.`
-      );
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planName }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setNotice(data.error || 'Failed to initiate billing session.');
+        return;
+      }
+
+      if (!data.configured) {
+        setNotice(
+          `Live Gateway Configuration Notice: ${data.message} All Free Starter calculator features remain fully functional without payment.`
+        );
+      } else {
+        setNotice(
+          `Checkout order created (${data.orderId}) for ₹${data.amount / 100}. Ready for payment gateway checkout modal.`
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Billing connection failed';
+      setNotice(msg);
+    } finally {
       setUpgrading(null);
-    }, 600);
+    }
   }
 
   const currentPlan = profile?.plan || 'free';

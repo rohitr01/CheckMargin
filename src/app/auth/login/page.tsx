@@ -6,10 +6,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Calculator, ArrowRight, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth/client';
 
+function getSafeRedirect(url: string | null): string {
+  if (!url || typeof url !== 'string') return '/dashboard';
+  const clean = url.trim();
+  if (clean.startsWith('/') && !clean.startsWith('//') && !clean.includes('\\')) {
+    return clean;
+  }
+  return '/dashboard';
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const rawRedirect = searchParams.get('redirect');
+  const safeRedirectUrl = getSafeRedirect(rawRedirect);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +53,7 @@ function LoginForm() {
         return;
       }
 
-      router.push(redirectUrl);
+      router.push(safeRedirectUrl);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An error occurred while logging in.';
@@ -134,7 +144,7 @@ function LoginForm() {
         <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
           Don&apos;t have an account yet?{' '}
           <Link
-            href={`/auth/signup${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
+            href={`/auth/signup${safeRedirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(safeRedirectUrl)}` : ''}`}
             className="font-bold text-indigo-600 hover:underline"
           >
             Sign up free

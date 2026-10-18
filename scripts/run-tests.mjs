@@ -2,6 +2,7 @@ import ts from 'typescript';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,12 +37,15 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log('Compilation succeeded. Executing test suite...\n');
+console.log('Compilation succeeded. Executing test suite with strict assertions...\n');
 const compiledTest = path.join(rootDir, '.test-dist', 'calculator.test.js');
-import(new URL(`file://${compiledTest.replace(/\\/g, '/')}`).href)
-  .catch((err) => {
-    import('module').then(({ createRequire }) => {
-      const require = createRequire(import.meta.url);
-      require(compiledTest);
-    });
-  });
+const require = createRequire(import.meta.url);
+
+try {
+  require(compiledTest);
+  console.log('\n✅ All test assertions passed release gating successfully.');
+} catch (testErr) {
+  console.error('\n❌ Release Gating Failed: Test assertion error caught.');
+  console.error(testErr);
+  process.exit(1);
+}

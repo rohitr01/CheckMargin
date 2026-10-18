@@ -51,7 +51,14 @@ export function convertUnit(qty: number, fromUnit?: string, toUnit?: string): nu
     return (qty * lengths[from]) / lengths[to];
   }
 
-  return qty;
+  const discrete = ['piece', 'pcs', 'unit', 'units', 'pack', 'packs', 'box', 'boxes', 'set', 'sets'];
+  if (discrete.includes(from) && discrete.includes(to)) {
+    return qty;
+  }
+
+  throw new Error(
+    `Incompatible or unsupported unit conversion: cannot convert from "${fromUnit}" to "${toUnit}".`
+  );
 }
 
 export interface ChannelPreset {
@@ -213,7 +220,8 @@ export interface GSTBreakdown {
   sgstAmount: number;        // half of output GST if intra-state
   igstAmount: number;        // full output GST if inter-state
   inputGSTTotal: number;     // tax paid on materials
-  eligibleITC: number;       // recoverable tax
+  feeGSTTotal?: number;      // 18% statutory GST paid on marketplace fees
+  eligibleITC: number;       // recoverable tax (materials + fee GST if claiming ITC)
   netGSTPayable: number;     // cash tax owed to government
   itcCreditForward: number;  // excess credit carry forward
 }
@@ -244,6 +252,7 @@ export interface CalculationResult {
   platformFeeRaw: number;
   gstOnPlatformFee: number;
   totalPlatformFeePerUnit: number;
+  effectivePlatformFeePerUnit: number;
   shippingCostPerUnit: number;
   adSpendPerUnit: number;
   rtoAllowancePerUnit: number;
@@ -283,6 +292,8 @@ export interface PriceScenario {
 export interface ShoppingListItem {
   name: string;
   qtyNeeded: number;
+  recipeUnit?: string;
+  qtyInPackUnit?: number;
   packUnit: string;
   packsNeeded: number;
   packPrice: number;
@@ -293,10 +304,15 @@ export interface ShoppingListItem {
  * Core batch cost calculation with comprehensive GST, channel, and RTO modeling
  */
 export function calculateBatchCost(input: BatchInput): CalculationResult {
-  // 1. Saleable yield
+  // 1. Saleable yield with strict scrap validation
   const batchSize = Math.max(input.batchSize, 1);
-  const failedUnits = Math.min(Math.max(input.failedUnits, 0), batchSize - 1);
-  const saleableYield = Math.max(batchSize - failedUnits, 1);
+  if (input.failedUnits >= batchSize) {
+    throw new Error(
+      `Failed units (${input.failedUnits}) cannot equal or exceed batch size (${batchSize}). A 100% scrap rate produces zero saleable yield.`
+    );
+  }
+  const failedUnits = Math.max(input.failedUnits, 0);
+  const saleableYield = batchSize - failedUnits;
   const yieldEfficiencyPercent = (saleableYield / batchSize) * 100;
 
   // 2. Material costs with Input GST & ITC handling
@@ -360,7 +376,14 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
     input.packagingPerUnit +
     overheadPerUnit;
 
-  // 5. Output GST Modeling
+  // 5. Platform Fees with 18% GST on services
+  const baseCommission = (input.sellingPrice * input.platformFeePercent) / 100 + input.platformFeeFixed;
+  const gstOnPlatformFee = baseCommission * ((input.gstOnPlatformFeePercent || 18) / 100);
+  const totalPlatformFeePerUnit = baseCommission + gstOnPlatformFee;
+  // If registered maker claims ITC, the 18% GST on platform services is recoverable via ITC
+  const effectivePlatformFeePerUnit = canClaimITC ? baseCommission : totalPlatformFeePerUnit;
+
+  // 6. Output GST Modeling & Full GST Reconciliation
   let taxableValue = input.sellingPrice;
   let outputGSTTotal = 0;
 
@@ -380,7 +403,8 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
   const igstAmount = !isIntraState ? outputGSTTotal : 0;
 
   const inputGSTPerUnit = totalInputGSTTotal / saleableYield;
-  const eligibleITC = canClaimITC ? inputGSTPerUnit : 0;
+  const eligibleFeeITC = canClaimITC ? gstOnPlatformFee : 0;
+  const eligibleITC = canClaimITC ? (inputGSTPerUnit + eligibleFeeITC) : 0;
   const netGSTPayable = Math.max(0, outputGSTTotal - eligibleITC);
   const itcCreditForward = Math.max(0, eligibleITC - outputGSTTotal);
 
@@ -397,15 +421,11 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
     sgstAmount,
     igstAmount,
     inputGSTTotal: inputGSTPerUnit,
+    feeGSTTotal: gstOnPlatformFee,
     eligibleITC,
     netGSTPayable,
     itcCreditForward,
   };
-
-  // 6. Platform Fees with 18% GST on services
-  const baseCommission = (input.sellingPrice * input.platformFeePercent) / 100 + input.platformFeeFixed;
-  const gstOnPlatformFee = baseCommission * ((input.gstOnPlatformFeePercent || 18) / 100);
-  const totalPlatformFeePerUnit = baseCommission + gstOnPlatformFee;
 
   // 7. Shipping, Ads & RTO Reserve
   const shippingCostPerUnit = input.shippingPerOrder;
@@ -415,7 +435,7 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
   const rtoAllowancePerUnit = rtoRate * rtoLossPerReturn;
 
   const totalSellingCostPerUnit =
-    totalPlatformFeePerUnit +
+    effectivePlatformFeePerUnit +
     shippingCostPerUnit +
     adSpendPerUnit +
     rtoAllowancePerUnit;
@@ -456,6 +476,7 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
     platformFeeRaw: baseCommission,
     gstOnPlatformFee,
     totalPlatformFeePerUnit,
+    effectivePlatformFeePerUnit,
     shippingCostPerUnit,
     adSpendPerUnit,
     rtoAllowancePerUnit,
@@ -666,7 +687,7 @@ export function suggestPrices(
 }
 
 /**
- * Generate a shopping list for a target batch
+ * Generate a shopping list for a target batch, normalizing recipe units to supplier pack units
  */
 export function generateShoppingList(
   materials: Material[],
@@ -679,11 +700,17 @@ export function generateShoppingList(
 
   return materials.map((m) => {
     const qtyNeeded = (m.qtyUsed / Math.max(currentBatchSize, 1)) * requiredBatchSize;
-    const packsNeeded = Math.ceil(qtyNeeded / Math.max(m.packSize, 1));
+    // Normalize recipe quantity to supplier pack unit (e.g. 1500g needed -> 1.5kg if supplier pack is in kg)
+    const qtyInPackUnit = m.qtyUnit
+      ? convertUnit(qtyNeeded, m.qtyUnit, m.packUnit)
+      : qtyNeeded;
+    const packsNeeded = Math.ceil(qtyInPackUnit / Math.max(m.packSize, 1));
     const estimatedCost = packsNeeded * m.packPrice;
     return {
       name: m.name,
       qtyNeeded: Math.round(qtyNeeded * 100) / 100,
+      recipeUnit: m.qtyUnit || m.packUnit,
+      qtyInPackUnit: Math.round(qtyInPackUnit * 100) / 100,
       packUnit: m.packUnit,
       packsNeeded,
       packPrice: m.packPrice,
@@ -783,6 +810,11 @@ export function calculateWholesaleTiers(
   };
 }
 
+export interface ScaleOptions {
+  setupLabourRatio?: number; // e.g. 0.25 (25% setup)
+  fixedOverheadRatio?: number; // e.g. 0.75 (75% fixed)
+}
+
 export interface ScaledBatchSummary {
   multiplier: number;
   batchSize: number;
@@ -800,15 +832,16 @@ export interface ScaledBatchSummary {
 
 /**
  * Simulates scaling a batch up (e.g. 2x, 5x, 10x) using an explicit industrial engineering model:
- * - Setup & prep time (25% of batch labour) remains fixed per production run.
- * - Craft / pouring time (75% of batch labour) scales with volume.
+ * - Setup & prep time remains fixed per production run (configurable, default 25% of batch labour).
+ * - Craft / pouring time scales with volume (remainder of batch labour).
  * - Materials and packaging scale linearly with units produced.
- * - Overhead is partitioned into fixed facility overhead (75%) and variable operating overhead (25%).
+ * - Overhead is partitioned into fixed facility overhead (configurable, default 75%) and variable operating overhead (remainder).
  */
 export function scaleBatch(
   baseInput: BatchInput,
   baseResult: CalculationResult,
-  multiplier: number
+  multiplier: number,
+  options?: ScaleOptions
 ): ScaledBatchSummary {
   const mult = Math.max(multiplier, 1);
   const scaledBatchSize = Math.round(baseInput.batchSize * mult);
@@ -820,7 +853,8 @@ export function scaleBatch(
   const scaledMaterialCost = baseResult.totalMaterialCost * mult;
 
   // Setup time stays fixed, while craft processing time scales linearly with batch units
-  const setupMinutes = Math.round(baseInput.labourMinutes * 0.25);
+  const setupRatio = Math.min(Math.max(options?.setupLabourRatio ?? 0.25, 0), 1);
+  const setupMinutes = Math.round(baseInput.labourMinutes * setupRatio);
   const craftMinutes = Math.max(baseInput.labourMinutes - setupMinutes, 0);
   const scaledLabourMinutes = setupMinutes + Math.round(craftMinutes * mult);
   const scaledLabourCost = (scaledLabourMinutes / 60) * baseInput.labourHourlyRate;
@@ -828,9 +862,10 @@ export function scaleBatch(
   // Packaging scales linearly with saleable units
   const scaledPackagingCost = baseInput.packagingPerUnit * scaledYield;
 
-  // Overhead has fixed studio overhead (75%) and variable utility/tools consumption (25%)
-  const fixedOverhead = baseInput.overheadPerBatch * 0.75;
-  const variableOverhead = baseInput.overheadPerBatch * 0.25 * mult;
+  // Overhead has fixed studio overhead and variable utility/tools consumption
+  const fixedRatio = Math.min(Math.max(options?.fixedOverheadRatio ?? 0.75, 0), 1);
+  const fixedOverhead = baseInput.overheadPerBatch * fixedRatio;
+  const variableOverhead = baseInput.overheadPerBatch * (1 - fixedRatio) * mult;
   const scaledOverheadCost = fixedOverhead + variableOverhead;
 
   const totalDirectBatchCost =

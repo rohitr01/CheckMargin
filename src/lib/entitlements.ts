@@ -51,7 +51,7 @@ export async function getUserEntitlements(userId: string): Promise<{
 }> {
   // Fetch user profile plan
   const profileRows = await sql`
-    SELECT plan FROM user_profiles WHERE neon_user_id = ${userId} LIMIT 1
+    SELECT plan FROM user_profiles WHERE neon_user_id = ${userId} OR auth_user_id = ${userId} LIMIT 1
   `;
   const planKey = (profileRows[0]?.plan as string) || 'free';
   const plan = PLAN_LIMITS[planKey] || PLAN_LIMITS.free;

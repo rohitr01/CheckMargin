@@ -6,10 +6,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Calculator, ArrowRight, User, Mail, Lock, Building, Loader2, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth/client';
 
+function getSafeRedirect(url: string | null): string {
+  if (!url || typeof url !== 'string') return '/dashboard';
+  const clean = url.trim();
+  if (clean.startsWith('/') && !clean.startsWith('//') && !clean.includes('\\')) {
+    return clean;
+  }
+  return '/dashboard';
+}
+
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const rawRedirect = searchParams.get('redirect');
+  const safeRedirectUrl = getSafeRedirect(rawRedirect);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -53,7 +63,7 @@ function SignupForm() {
 
       // Sync business profile metadata to Neon PostgreSQL
       try {
-        await fetch('/api/user/profile', {
+        const profileRes = await fetch('/api/user/profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -62,12 +72,15 @@ function SignupForm() {
             primaryIndustry,
           }),
         });
+        if (!profileRes.ok) {
+          console.warn('Profile sync returned non-OK status:', profileRes.status);
+        }
       } catch (err) {
         console.warn('Profile sync warning:', err);
       }
 
-      // Route to workspace
-      router.push(redirectUrl);
+      // Route to workspace securely
+      router.push(safeRedirectUrl);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An unexpected error occurred during signup.';
@@ -216,7 +229,7 @@ function SignupForm() {
         <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
           Already have an account?{' '}
           <Link
-            href={`/auth/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
+            href={`/auth/login${safeRedirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(safeRedirectUrl)}` : ''}`}
             className="font-bold text-indigo-600 hover:underline"
           >
             Log in here

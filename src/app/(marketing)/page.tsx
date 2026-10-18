@@ -157,7 +157,7 @@ export default function HomePage() {
               The Underpricing Trap
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Why 80% of small product makers make far less than they think
+              Why many batch product makers earn far less than expected
             </h2>
             <p className="mt-3 text-slate-600">
               Comparing a standard mental estimate against verified batch-level unit economics:
