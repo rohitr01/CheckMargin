@@ -46,6 +46,11 @@ import {
   Globe,
   Laptop,
   Download,
+  Upload,
+  BarChart3,
+  PieChart,
+  Sliders,
+  ArrowUpRight,
 } from 'lucide-react';
 
 const HSN_PRESETS = [
@@ -69,6 +74,8 @@ const SAC_PRESETS = [
 
 const DIGITAL_PRESETS = [
   {
+    id: 'notion',
+    emoji: '💻',
     name: 'Notion Life & Business OS Template',
     sac: '9984',
     sellingPrice: 999,
@@ -85,6 +92,8 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 250,
   },
   {
+    id: 'stl3d',
+    emoji: '🧊',
     name: '3D Printable STL Model & Miniature Bundle',
     sac: '9983',
     sellingPrice: 1499,
@@ -101,6 +110,8 @@ const DIGITAL_PRESETS = [
     labourHourlyRate: 300,
   },
   {
+    id: 'lightroom',
+    emoji: '📷',
     name: 'Cinematic Lightroom Presets Pack (Mobile & Desktop)',
     sac: '9984',
     sellingPrice: 799,
@@ -114,6 +125,59 @@ const DIGITAL_PRESETS = [
     batchSize: 50,
     labourMinutes: 180,
     labourHourlyRate: 250,
+  },
+  {
+    id: 'canva',
+    emoji: '🎨',
+    name: 'Canva Social Media Kit (150+ Viral Templates)',
+    sac: '9984',
+    sellingPrice: 699,
+    channelId: 'cosmofeed',
+    platformFeePercent: 10,
+    platformFeeFixed: 0,
+    materials: [
+      { name: 'Canva Teams Commercial Subscription', packPrice: 999, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Commercial Stock Photography & Vectors', packPrice: 1200, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 50,
+    labourMinutes: 180,
+    labourHourlyRate: 200,
+  },
+  {
+    id: 'course',
+    emoji: '🎓',
+    name: 'Self-Paced Video Course & Masterclass',
+    sac: '9984',
+    sellingPrice: 2499,
+    channelId: 'instamojo',
+    platformFeePercent: 5,
+    platformFeeFixed: 3,
+    materials: [
+      { name: 'Vimeo OTT / Bunny Stream Video Hosting', packPrice: 1400, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Microphone & Studio Lighting Allocation', packPrice: 1500, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Course PDF Workbook Design Assets', packPrice: 600, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 30,
+    labourMinutes: 480,
+    labourHourlyRate: 350,
+  },
+  {
+    id: 'audio',
+    emoji: '🎵',
+    name: 'Lo-Fi Beats & Audio Sample Pack (WAV/MIDI)',
+    sac: '9984',
+    sellingPrice: 899,
+    channelId: 'gumroad',
+    platformFeePercent: 10,
+    platformFeeFixed: 0,
+    materials: [
+      { name: 'DAW Plugin Suite Licenses (Serum, Kontakt)', packPrice: 2500, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Analog Tape Machine & Pre-amp Depreciation', packPrice: 1000, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Audio Mastering Service Allocation', packPrice: 1200, packSize: 1, packUnit: 'pack', qtyUsed: 1, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+    batchSize: 40,
+    labourMinutes: 300,
+    labourHourlyRate: 300,
   },
 ];
 
@@ -163,8 +227,286 @@ const INITIAL_FORM: BatchInput = {
   monthlyFixedCost: 15000,
 };
 
+const PHYSICAL_PRESETS = [
+  {
+    id: 'candle',
+    emoji: '🕯️',
+    industry: 'Candles & Wax Melts',
+    name: 'Handcrafted 200g Vanilla Soy Candle',
+    hsnCode: '3406',
+    outputGSTRatePercent: 5,
+    sellingPrice: 599,
+    channelId: 'amazon',
+    platformFeePercent: 12,
+    platformFeeFixed: 15,
+    batchSize: 10,
+    failedUnits: 1,
+    labourMinutes: 90,
+    labourHourlyRate: 150,
+    packagingPerUnit: 25,
+    overheadPerBatch: 50,
+    shippingPerOrder: 65,
+    rtoRatePercent: 8,
+    rtoLossPerReturn: 90,
+    materials: INITIAL_MATERIALS,
+  },
+  {
+    id: 'soap',
+    emoji: '🧼',
+    industry: 'Cold Process Soaps',
+    name: 'Cold Process Honey & Goat Milk Soap Bar',
+    hsnCode: '3401',
+    outputGSTRatePercent: 5,
+    sellingPrice: 280,
+    channelId: 'shopify',
+    platformFeePercent: 2,
+    platformFeeFixed: 3,
+    batchSize: 12,
+    failedUnits: 1,
+    labourMinutes: 75,
+    labourHourlyRate: 150,
+    packagingPerUnit: 14,
+    overheadPerBatch: 40,
+    shippingPerOrder: 55,
+    rtoRatePercent: 5,
+    rtoLossPerReturn: 70,
+    materials: [
+      { name: 'Pure Coconut Oil (Cold Pressed)', packPrice: 420, packSize: 1000, packUnit: 'ml', qtyUsed: 400, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Extra Virgin Olive Oil', packPrice: 850, packSize: 1000, packUnit: 'ml', qtyUsed: 350, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Raw Shea Butter (Unrefined)', packPrice: 650, packSize: 500, packUnit: 'g', qtyUsed: 150, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Pure Sodium Hydroxide (Lye)', packPrice: 220, packSize: 1000, packUnit: 'g', qtyUsed: 130, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Raw Forest Honey & Goat Milk', packPrice: 350, packSize: 500, packUnit: 'ml', qtyUsed: 200, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Essential Oil Blend (Lavender/Oat)', packPrice: 900, packSize: 100, packUnit: 'ml', qtyUsed: 35, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'bakery',
+    emoji: '🧁',
+    industry: 'Bakery & Confectionery',
+    name: 'Artisan Belgian Chocolate Brownie Batch',
+    hsnCode: '1905',
+    outputGSTRatePercent: 5,
+    sellingPrice: 160,
+    channelId: 'instagram_d2c',
+    platformFeePercent: 1.5,
+    platformFeeFixed: 0,
+    batchSize: 16,
+    failedUnits: 1,
+    labourMinutes: 90,
+    labourHourlyRate: 180,
+    packagingPerUnit: 22,
+    overheadPerBatch: 60,
+    shippingPerOrder: 45,
+    rtoRatePercent: 2,
+    rtoLossPerReturn: 90,
+    materials: [
+      { name: '55% Belgian Dark Chocolate Couverture', packPrice: 950, packSize: 1000, packUnit: 'g', qtyUsed: 350, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Pure Dairy Butter (Unsalted)', packPrice: 310, packSize: 500, packUnit: 'g', qtyUsed: 220, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+      { name: 'Organic Brown Sugar & Castor Sugar', packPrice: 180, packSize: 1000, packUnit: 'g', qtyUsed: 300, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Premium Wheat Flour Blend', packPrice: 80, packSize: 1000, packUnit: 'g', qtyUsed: 160, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Dutch Process Cocoa Powder', packPrice: 450, packSize: 500, packUnit: 'g', qtyUsed: 60, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'California Walnuts (Chopped)', packPrice: 550, packSize: 500, packUnit: 'g', qtyUsed: 120, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'cosmetics',
+    emoji: '🧴',
+    industry: 'Cosmetics & Skincare',
+    name: 'Vitamin C Brightening Face Serum (30ml)',
+    hsnCode: '3304',
+    outputGSTRatePercent: 18,
+    sellingPrice: 699,
+    channelId: 'amazon',
+    platformFeePercent: 12,
+    platformFeeFixed: 15,
+    batchSize: 10,
+    failedUnits: 0,
+    labourMinutes: 60,
+    labourHourlyRate: 200,
+    packagingPerUnit: 28,
+    overheadPerBatch: 50,
+    shippingPerOrder: 65,
+    rtoRatePercent: 8,
+    rtoLossPerReturn: 95,
+    materials: [
+      { name: 'Active Ethyl Ascorbic Acid (Vit C)', packPrice: 1200, packSize: 100, packUnit: 'g', qtyUsed: 30, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Hyaluronic Acid + Ferulic Base', packPrice: 1600, packSize: 500, packUnit: 'ml', qtyUsed: 250, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Rose Water Distillate Hydrosol', packPrice: 400, packSize: 1000, packUnit: 'ml', qtyUsed: 300, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Amber Glass Dropper Bottle (30ml)', packPrice: 550, packSize: 20, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Waterproof Foil Label + Shrink Band', packPrice: 180, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'resin',
+    emoji: '🎨',
+    industry: 'Resin & Molded Art',
+    name: 'Ocean Wave Epoxy Resin Coasters (Set of 4)',
+    hsnCode: '3926',
+    outputGSTRatePercent: 18,
+    sellingPrice: 999,
+    channelId: 'etsy',
+    platformFeePercent: 9.5,
+    platformFeeFixed: 17,
+    batchSize: 4,
+    failedUnits: 0,
+    labourMinutes: 120,
+    labourHourlyRate: 180,
+    packagingPerUnit: 35,
+    overheadPerBatch: 70,
+    shippingPerOrder: 70,
+    rtoRatePercent: 6,
+    rtoLossPerReturn: 120,
+    materials: [
+      { name: '2:1 Crystal Art Epoxy Resin + Hardener', packPrice: 1400, packSize: 1500, packUnit: 'g', qtyUsed: 400, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Mica Pigments & White Wave Cell Paste', packPrice: 750, packSize: 100, packUnit: 'g', qtyUsed: 15, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Silicone Geode Coaster Mold Deprec.', packPrice: 480, packSize: 40, packUnit: 'piece', qtyUsed: 4, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Non-Slip Cork Backing Pads', packPrice: 120, packSize: 20, packUnit: 'piece', qtyUsed: 4, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Metallic Liquid Gold Edge Paint', packPrice: 320, packSize: 50, packUnit: 'ml', qtyUsed: 8, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'jewellery',
+    emoji: '💍',
+    industry: 'Handmade Jewellery',
+    name: 'Polymer Clay Floral Dangle Earrings',
+    hsnCode: '7117',
+    outputGSTRatePercent: 3,
+    sellingPrice: 499,
+    channelId: 'instagram_d2c',
+    platformFeePercent: 1.5,
+    platformFeeFixed: 0,
+    batchSize: 10,
+    failedUnits: 1,
+    labourMinutes: 150,
+    labourHourlyRate: 150,
+    packagingPerUnit: 18,
+    overheadPerBatch: 30,
+    shippingPerOrder: 50,
+    rtoRatePercent: 5,
+    rtoLossPerReturn: 60,
+    materials: [
+      { name: 'Polymer Clay Blocks (Color Palette)', packPrice: 680, packSize: 250, packUnit: 'g', qtyUsed: 60, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Hypoallergenic 18K Gold Plated Studs', packPrice: 450, packSize: 50, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'UV Gloss Glaze & Resin Sealant', packPrice: 550, packSize: 100, packUnit: 'ml', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Foil-Stamped Earring Card & Backings', packPrice: 250, packSize: 100, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'apparel',
+    emoji: '🧵',
+    industry: 'Textiles & Apparel',
+    name: 'Hand-Block Printed Cotton Tote Bag',
+    hsnCode: '6204',
+    outputGSTRatePercent: 12,
+    sellingPrice: 650,
+    channelId: 'shopify',
+    platformFeePercent: 2,
+    platformFeeFixed: 3,
+    batchSize: 5,
+    failedUnits: 0,
+    labourMinutes: 180,
+    labourHourlyRate: 160,
+    packagingPerUnit: 20,
+    overheadPerBatch: 50,
+    shippingPerOrder: 55,
+    rtoRatePercent: 6,
+    rtoLossPerReturn: 80,
+    materials: [
+      { name: '10oz Heavy Cotton Canvas', packPrice: 240, packSize: 1, packUnit: 'metre', qtyUsed: 3, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Natural Azo-Free Indigo & Earth Dye', packPrice: 380, packSize: 500, packUnit: 'g', qtyUsed: 100, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Reinforced Cotton Webbing Straps', packPrice: 150, packSize: 10, packUnit: 'metre', qtyUsed: 6, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+      { name: 'YKK Metal Zipper & Key Loop', packPrice: 180, packSize: 5, packUnit: 'piece', qtyUsed: 5, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Woven Organic Cotton Brand Label', packPrice: 120, packSize: 50, packUnit: 'piece', qtyUsed: 5, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'food',
+    emoji: '🍫',
+    industry: 'Packaged Food & Snacks',
+    name: 'Roasted Peri Peri Makhana Snack Pouch (100g)',
+    hsnCode: '1904',
+    outputGSTRatePercent: 12,
+    sellingPrice: 199,
+    channelId: 'amazon',
+    platformFeePercent: 12,
+    platformFeeFixed: 15,
+    batchSize: 10,
+    failedUnits: 0,
+    labourMinutes: 45,
+    labourHourlyRate: 150,
+    packagingPerUnit: 12,
+    overheadPerBatch: 40,
+    shippingPerOrder: 60,
+    rtoRatePercent: 6,
+    rtoLossPerReturn: 80,
+    materials: [
+      { name: 'Grade 6-Suta Jumbo Foxnuts (Makhana)', packPrice: 850, packSize: 1000, packUnit: 'g', qtyUsed: 1100, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Cold Pressed Groundnut Oil', packPrice: 280, packSize: 1000, packUnit: 'ml', qtyUsed: 120, gstRatePercent: 5, isPackPriceGSTInclusive: true },
+      { name: 'Gourmet Peri Peri Seasoning Mix', packPrice: 320, packSize: 500, packUnit: 'g', qtyUsed: 150, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+      { name: 'Nitrogen-Flushed Standup Pouch', packPrice: 180, packSize: 25, packUnit: 'piece', qtyUsed: 10, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'jesmonite',
+    emoji: '🪴',
+    industry: 'Jesmonite & Plaster',
+    name: 'Fluted Jesmonite Succulent Planter',
+    hsnCode: '6815',
+    outputGSTRatePercent: 18,
+    sellingPrice: 549,
+    channelId: 'etsy',
+    platformFeePercent: 9.5,
+    platformFeeFixed: 17,
+    batchSize: 4,
+    failedUnits: 0,
+    labourMinutes: 90,
+    labourHourlyRate: 150,
+    packagingPerUnit: 25,
+    overheadPerBatch: 50,
+    shippingPerOrder: 68,
+    rtoRatePercent: 5,
+    rtoLossPerReturn: 110,
+    materials: [
+      { name: 'Jesmonite AC100 Base & Liquid Duo', packPrice: 2400, packSize: 3500, packUnit: 'g', qtyUsed: 1200, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Mineral Terracotta Pigment Paste', packPrice: 420, packSize: 100, packUnit: 'g', qtyUsed: 25, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Penetrating Acrylic Stone Sealer', packPrice: 600, packSize: 500, packUnit: 'ml', qtyUsed: 80, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Silicone Non-Scratch Base Bumpers', packPrice: 80, packSize: 40, packUnit: 'piece', qtyUsed: 16, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+  {
+    id: 'woodcraft',
+    emoji: '🪵',
+    industry: 'Woodcraft & Decor',
+    name: 'Custom Laser-Engraved Wooden Nameplate',
+    hsnCode: '4421',
+    outputGSTRatePercent: 12,
+    sellingPrice: 1299,
+    channelId: 'amazon',
+    platformFeePercent: 12,
+    platformFeeFixed: 15,
+    batchSize: 2,
+    failedUnits: 0,
+    labourMinutes: 60,
+    labourHourlyRate: 200,
+    packagingPerUnit: 35,
+    overheadPerBatch: 80,
+    shippingPerOrder: 70,
+    rtoRatePercent: 4,
+    rtoLossPerReturn: 140,
+    materials: [
+      { name: 'Kiln-Dried Teakwood Plank (12x4")', packPrice: 650, packSize: 2, packUnit: 'piece', qtyUsed: 2, gstRatePercent: 12, isPackPriceGSTInclusive: true },
+      { name: 'Laser Tube & Machine Run Time', packPrice: 3500, packSize: 100, packUnit: 'piece', qtyUsed: 2, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Golden Mirror Acrylic Lettering', packPrice: 380, packSize: 4, packUnit: 'piece', qtyUsed: 2, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Natural Beeswax Wood Polish', packPrice: 320, packSize: 250, packUnit: 'ml', qtyUsed: 30, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+      { name: 'Heavy-Duty Brass Keyhole Hooks', packPrice: 60, packSize: 10, packUnit: 'piece', qtyUsed: 4, gstRatePercent: 18, isPackPriceGSTInclusive: true },
+    ],
+  },
+];
+
 export default function CalculatorPage() {
   const [productType, setProductType] = useState<'physical' | 'digital'>('physical');
+  const [activePhysicalPresetId, setActivePhysicalPresetId] = useState<string>('candle');
+  const [activeDigitalPresetId, setActiveDigitalPresetId] = useState<string>('');
   const [selectedCourier, setSelectedCourier] = useState('custom');
   const [materials, setMaterials] = useState(INITIAL_MATERIALS);
   const [form, setForm] = useState<BatchInput>(INITIAL_FORM);
@@ -173,6 +515,11 @@ export default function CalculatorPage() {
   const [scaleMultiplier, setScaleMultiplier] = useState(5);
   const [isHSNModalOpen, setIsHSNModalOpen] = useState(false);
   const [hsnSearch, setHsnSearch] = useState('');
+  const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [csvImportMode, setCsvImportMode] = useState<'replace' | 'append'>('replace');
+  const [csvParseError, setCsvParseError] = useState('');
+  const [simulatedUnits, setSimulatedUnits] = useState(50);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
@@ -229,7 +576,37 @@ export default function CalculatorPage() {
     }
   }
 
-  function loadDigitalPreset(preset: typeof DIGITAL_PRESETS[0]) {
+  function loadPhysicalPreset(preset: (typeof PHYSICAL_PRESETS)[0]) {
+    setActivePhysicalPresetId(preset.id);
+    setProductType('physical');
+    setMaterials(preset.materials);
+    const updated: BatchInput = {
+      ...form,
+      productName: preset.name,
+      productType: 'physical',
+      hsnCode: preset.hsnCode,
+      outputGSTRatePercent: preset.outputGSTRatePercent,
+      sellingPrice: preset.sellingPrice,
+      channelId: preset.channelId,
+      platformFeePercent: preset.platformFeePercent,
+      platformFeeFixed: preset.platformFeeFixed,
+      batchSize: preset.batchSize,
+      failedUnits: preset.failedUnits,
+      labourMinutes: preset.labourMinutes,
+      labourHourlyRate: preset.labourHourlyRate,
+      packagingPerUnit: preset.packagingPerUnit,
+      shippingPerOrder: preset.shippingPerOrder,
+      overheadPerBatch: preset.overheadPerBatch,
+      rtoRatePercent: preset.rtoRatePercent,
+      rtoLossPerReturn: preset.rtoLossPerReturn,
+    };
+    setSelectedCourier(preset.channelId === 'amazon' ? 'amazon_ats' : 'shiprocket');
+    setForm(updated);
+    recalc(updated, preset.materials);
+  }
+
+  function loadDigitalPreset(preset: (typeof DIGITAL_PRESETS)[0]) {
+    setActiveDigitalPresetId(preset.id);
     setProductType('digital');
     setMaterials(preset.materials);
     const updated: BatchInput = {
@@ -254,6 +631,57 @@ export default function CalculatorPage() {
     setSelectedCourier('custom');
     setForm(updated);
     recalc(updated, preset.materials);
+  }
+
+  function handleImportCSVData() {
+    setCsvParseError('');
+    if (!csvText.trim()) {
+      setCsvParseError('Please paste or type CSV lines first.');
+      return;
+    }
+    const lines = csvText.trim().split('\n');
+    const parsed: typeof materials = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      // Skip header row if it contains keywords
+      if (i === 0 && (line.toLowerCase().includes('material') || line.toLowerCase().includes('pack price') || line.toLowerCase().includes('ingredient'))) {
+        continue;
+      }
+
+      // Split by tab or comma
+      const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      if (parts.length < 3) continue;
+
+      const name = parts[0]?.trim() || `Material ${parsed.length + 1}`;
+      const packPrice = parseFloat(parts[1]?.trim()) || 0;
+      const packSize = parseFloat(parts[2]?.trim()) || 1;
+      const packUnit = parts[3]?.trim() || 'g';
+      const gstRatePercent = parts[4] !== undefined ? parseFloat(parts[4]?.trim()) || 18 : 18;
+      const qtyUsed = parts[5] !== undefined ? parseFloat(parts[5]?.trim()) || 0 : 0;
+
+      parsed.push({
+        name,
+        packPrice,
+        packSize,
+        packUnit,
+        gstRatePercent,
+        isPackPriceGSTInclusive: true,
+        qtyUsed,
+      });
+    }
+
+    if (parsed.length === 0) {
+      setCsvParseError('Could not parse any valid material rows. Check format: Name, Pack Price, Pack Size, Unit, GST%, Qty Used');
+      return;
+    }
+
+    const nextMaterials = csvImportMode === 'append' ? [...materials, ...parsed] : parsed;
+    setMaterials(nextMaterials);
+    recalc(form, nextMaterials);
+    setIsCSVModalOpen(false);
+    setCsvText('');
   }
 
   function handleCourierSelect(courierId: string) {
@@ -537,6 +965,55 @@ export default function CalculatorPage() {
             </div>
           </div>
 
+          {/* Physical Industry Presets Bar */}
+          {productType === 'physical' && (
+            <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Quick-Load Industry Recipe Presets:
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500 font-semibold">
+                  Pre-filled with verified wholesale BOM, HSN code, scrap rate & GST rates
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {PHYSICAL_PRESETS.map((p) => {
+                  const isActive = activePhysicalPresetId === p.id && form.productName === p.name;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => loadPhysicalPreset(p)}
+                      className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20'
+                          : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">{p.emoji}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          HSN {p.hsnCode}
+                        </span>
+                      </div>
+                      <div className={`font-bold truncate text-[11px] ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                        {p.industry}
+                      </div>
+                      <div className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-indigo-200' : 'text-slate-500'}`}>
+                        {p.name.split('(')[0].trim()}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Digital Presets Bar */}
           {productType === 'digital' && (
             <div className="mb-6 p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl">
@@ -544,26 +1021,44 @@ export default function CalculatorPage() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
                   <span className="text-xs font-black text-indigo-950 uppercase tracking-wider">
-                    Quick-Load Digital Presets:
+                    Quick-Load Digital Creator Presets:
                   </span>
                 </div>
                 <span className="text-[11px] text-indigo-700 font-semibold">
                   Zero freight, zero packaging, zero scrap allowance
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {DIGITAL_PRESETS.map((p) => (
-                  <button
-                    key={p.name}
-                    type="button"
-                    onClick={() => loadDigitalPreset(p)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-xl border border-indigo-300 transition-colors shadow-2xs cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>{p.name}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">₹{p.sellingPrice}</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {DIGITAL_PRESETS.map((p) => {
+                  const isActive = activeDigitalPresetId === p.id && form.productName === p.name;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => loadDigitalPreset(p)}
+                      className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20'
+                          : 'bg-white hover:bg-indigo-100 border-indigo-200 text-indigo-900'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">{p.emoji}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-indigo-100 text-indigo-800'
+                        }`}>
+                          SAC {p.sac}
+                        </span>
+                      </div>
+                      <div className={`font-bold truncate text-[11px] ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                        {p.name.split('(')[0].trim()}
+                      </div>
+                      <div className={`text-[10px] font-semibold mt-0.5 ${isActive ? 'text-indigo-200' : 'text-indigo-600'}`}>
+                        ₹{p.sellingPrice} MSRP
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -620,18 +1115,29 @@ export default function CalculatorPage() {
 
         {/* Section 2: Recipe Materials & Input GST */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">2</span>
               <h2 className="font-bold text-slate-900 text-lg">Bill of Materials (BOM) & Input GST</h2>
             </div>
-            <button
-              onClick={addMaterial}
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 py-2 rounded-xl border border-indigo-200 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Material Line</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCSVModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Import / Paste CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={addMaterial}
+                className="inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 py-2 rounded-xl border border-indigo-200 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Material Line</span>
+              </button>
+            </div>
           </div>
 
           <p className="text-xs text-slate-500 mb-6">
@@ -788,7 +1294,7 @@ export default function CalculatorPage() {
             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">4</span>
             <h2 className="font-bold text-slate-900 text-lg">Labour, Packaging & Studio Overhead</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Batch Labour (Minutes)
@@ -848,6 +1354,22 @@ export default function CalculatorPage() {
                 }}
                 className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-900 text-sm"
               />
+            </div>
+            <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3">
+              <label className="block text-xs font-bold text-indigo-950 uppercase tracking-wider mb-1">
+                Studio Monthly Fixed (₹)
+              </label>
+              <input
+                type="number"
+                value={form.monthlyFixedCost ?? 15000}
+                onChange={(e) => {
+                  const updated = { ...form, monthlyFixedCost: parseFloat(e.target.value) || 0 };
+                  setForm(updated);
+                  recalc(updated, materials);
+                }}
+                className="w-full bg-white border border-indigo-300 rounded-lg px-3 py-1.5 font-bold text-indigo-900 text-sm focus:ring-2 focus:ring-indigo-500"
+              />
+              <span className="text-[10px] text-indigo-700 block mt-1">Rent, Wi-Fi & fixed overhead</span>
             </div>
           </div>
         </div>
@@ -1247,6 +1769,331 @@ export default function CalculatorPage() {
                 <div className="text-lg font-black mt-0.5">₹{result.totalCostPerUnit.toFixed(2)}</div>
               </div>
             </div>
+          </div>
+
+          {/* Visual Selling Price Anatomy & Margin Bar */}
+          <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-xl font-black text-slate-900">Selling Price Anatomy & Margin Distribution</h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Visual breakdown of where every rupee of your ₹{form.sellingPrice} selling price goes:
+                </p>
+              </div>
+              <span className={`text-xs font-black px-3 py-1 rounded-full ${
+                result.grossProfitPerUnit >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+              }`}>
+                {result.grossMarginPercent.toFixed(1)}% Net Margin
+              </span>
+            </div>
+
+            {/* Visual Multi-Segment Bar */}
+            {(() => {
+              const sp = Math.max(form.sellingPrice, 1);
+              const matPct = Math.min((result.materialCostPerUnit / sp) * 100, 100);
+              const labPct = Math.min((result.labourCostPerUnit / sp) * 100, 100);
+              const packPct = Math.min((form.packagingPerUnit / sp) * 100, 100);
+              const feePct = Math.min((result.totalPlatformFeePerUnit / sp) * 100, 100);
+              const shipPct = Math.min(((result.shippingCostPerUnit + result.rtoAllowancePerUnit) / sp) * 100, 100);
+              const profitPct = Math.max(0, (result.grossProfitPerUnit / sp) * 100);
+
+              return (
+                <div>
+                  <div className="w-full h-7 bg-slate-100 rounded-xl overflow-hidden flex shadow-inner mb-4">
+                    {matPct > 0 && (
+                      <div
+                        style={{ width: `${matPct}%` }}
+                        className="bg-amber-400 h-full flex items-center justify-center text-[10px] font-black text-amber-950 truncate px-1"
+                        title={`Materials: ₹${result.materialCostPerUnit.toFixed(2)} (${matPct.toFixed(1)}%)`}
+                      >
+                        {matPct > 6 ? `${matPct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                    {labPct > 0 && (
+                      <div
+                        style={{ width: `${labPct}%` }}
+                        className="bg-sky-400 h-full flex items-center justify-center text-[10px] font-black text-sky-950 truncate px-1"
+                        title={`Labour: ₹${result.labourCostPerUnit.toFixed(2)} (${labPct.toFixed(1)}%)`}
+                      >
+                        {labPct > 6 ? `${labPct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                    {packPct > 0 && (
+                      <div
+                        style={{ width: `${packPct}%` }}
+                        className="bg-purple-400 h-full flex items-center justify-center text-[10px] font-black text-purple-950 truncate px-1"
+                        title={`Packaging: ₹${form.packagingPerUnit.toFixed(2)} (${packPct.toFixed(1)}%)`}
+                      >
+                        {packPct > 6 ? `${packPct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                    {feePct > 0 && (
+                      <div
+                        style={{ width: `${feePct}%` }}
+                        className="bg-rose-400 h-full flex items-center justify-center text-[10px] font-black text-rose-950 truncate px-1"
+                        title={`Platform & GST: ₹${result.totalPlatformFeePerUnit.toFixed(2)} (${feePct.toFixed(1)}%)`}
+                      >
+                        {feePct > 6 ? `${feePct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                    {shipPct > 0 && (
+                      <div
+                        style={{ width: `${shipPct}%` }}
+                        className="bg-orange-400 h-full flex items-center justify-center text-[10px] font-black text-orange-950 truncate px-1"
+                        title={`Shipping & RTO: ₹${(result.shippingCostPerUnit + result.rtoAllowancePerUnit).toFixed(2)} (${shipPct.toFixed(1)}%)`}
+                      >
+                        {shipPct > 6 ? `${shipPct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                    {profitPct > 0 && (
+                      <div
+                        style={{ width: `${profitPct}%` }}
+                        className="bg-emerald-500 h-full flex items-center justify-center text-[10px] font-black text-white truncate px-1"
+                        title={`Net Profit: ₹${result.grossProfitPerUnit.toFixed(2)} (${profitPct.toFixed(1)}%)`}
+                      >
+                        {profitPct > 6 ? `${profitPct.toFixed(0)}%` : ''}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Legend */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-amber-400 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Materials</span>
+                        <strong className="text-slate-900 font-bold">₹{result.materialCostPerUnit.toFixed(1)} ({matPct.toFixed(0)}%)</strong>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-sky-400 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Labour</span>
+                        <strong className="text-slate-900 font-bold">₹{result.labourCostPerUnit.toFixed(1)} ({labPct.toFixed(0)}%)</strong>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-purple-400 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Packaging</span>
+                        <strong className="text-slate-900 font-bold">₹{form.packagingPerUnit.toFixed(1)} ({packPct.toFixed(0)}%)</strong>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-rose-400 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Platform + GST</span>
+                        <strong className="text-slate-900 font-bold">₹{result.totalPlatformFeePerUnit.toFixed(1)} ({feePct.toFixed(0)}%)</strong>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-orange-400 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Freight + RTO</span>
+                        <strong className="text-slate-900 font-bold">₹{(result.shippingCostPerUnit + result.rtoAllowancePerUnit).toFixed(1)} ({shipPct.toFixed(0)}%)</strong>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Net Profit</span>
+                        <strong className={`font-bold ${result.grossProfitPerUnit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          ₹{result.grossProfitPerUnit.toFixed(1)} ({profitPct.toFixed(0)}%)
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Cross-Channel Profit Comparison Hub */}
+          <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-xl font-black text-slate-900">Cross-Channel Profit Comparison</h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  See how selling this product at ₹{form.sellingPrice} impacts your take-home cash across different sales channels:
+                </p>
+              </div>
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                Simulated on Current Recipe
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="pb-3">Sales Channel</th>
+                    <th className="pb-3">Commission & Fees</th>
+                    <th className="pb-3">Logistics / Delivery</th>
+                    <th className="pb-3">Net Profit / Unit</th>
+                    <th className="pb-3">Net Margin</th>
+                    <th className="pb-3 text-right">Profit on 50 Units</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[
+                    { id: 'amazon', name: 'Amazon India (Easy Ship)', feePct: 12, fixed: 15, ship: 65 },
+                    { id: 'flipkart', name: 'Flipkart Marketplace', feePct: 13, fixed: 15, ship: 65 },
+                    { id: 'meesho', name: 'Meesho (0% Commission)', feePct: 0, fixed: 0, ship: 60 },
+                    { id: 'shopify', name: 'Own Website (Shopify/Razorpay)', feePct: 2, fixed: 3, ship: 55 },
+                    { id: 'instagram_d2c', name: 'Instagram Direct / WhatsApp (UPI)', feePct: 1.5, fixed: 0, ship: 50 },
+                    { id: 'fleamarket', name: 'Offline Pop-up / Flea Market', feePct: 0, fixed: 0, ship: 0 },
+                  ].map((ch) => {
+                    const sp = form.sellingPrice;
+                    const feeRaw = (sp * ch.feePct) / 100 + ch.fixed;
+                    const feeGST = feeRaw * 0.18;
+                    const totalChannelCost = feeRaw + feeGST;
+                    const shipping = productType === 'digital' ? 0 : ch.ship;
+                    const totalCost = result.totalDirectCostPerUnit + totalChannelCost + shipping + (productType === 'digital' ? 0 : result.rtoAllowancePerUnit);
+                    const netRevenue = form.isGSTRegistered && form.outputGSTRatePercent > 0
+                      ? form.isPriceGSTInclusive
+                        ? sp / (1 + form.outputGSTRatePercent / 100)
+                        : sp
+                      : sp;
+                    const profit = netRevenue - totalCost;
+                    const margin = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
+                    const profit50 = profit * 50;
+
+                    return (
+                      <tr key={ch.id} className={`hover:bg-slate-50 transition-colors ${form.channelId === ch.id ? 'bg-indigo-50/40 font-semibold' : ''}`}>
+                        <td className="py-3.5">
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{ch.name}</span>
+                            {form.channelId === ch.id && (
+                              <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">Current</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 text-slate-600">
+                          ₹{totalChannelCost.toFixed(1)} <span className="text-[10px] text-slate-400">({ch.feePct}% + ₹{ch.fixed})</span>
+                        </td>
+                        <td className="py-3.5 text-slate-600">
+                          {shipping > 0 ? `₹${shipping.toFixed(0)}` : '₹0 (Self/Digital)'}
+                        </td>
+                        <td className={`py-3.5 font-bold ${profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          ₹{profit.toFixed(2)}
+                        </td>
+                        <td className="py-3.5">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                            margin >= 40 ? 'bg-emerald-100 text-emerald-800' : margin >= 20 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {margin.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className={`py-3.5 text-right font-black ${profit50 >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          ₹{profit50.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Interactive Monthly Sales & Cash Flow Simulator */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl border border-indigo-500/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-indigo-800/60">
+              <div>
+                <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full mb-2">
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Interactive Monthly Business Planning</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Monthly Sales & Take-Home Cash Simulator</h3>
+                <p className="text-xs text-indigo-200 mt-0.5">
+                  Drag the slider to project total monthly revenue, production outflows, studio overhead, and net founder profit:
+                </p>
+              </div>
+
+              {/* Slider Input */}
+              <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/15">
+                <span className="text-xs text-indigo-300 font-bold">Monthly Target:</span>
+                <span className="text-xl font-black text-white">{simulatedUnits}</span>
+                <span className="text-xs text-indigo-300">units/mo</span>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <input
+                type="range"
+                min={5}
+                max={500}
+                step={5}
+                value={simulatedUnits}
+                onChange={(e) => setSimulatedUnits(parseInt(e.target.value) || 5)}
+                className="w-full accent-indigo-500 h-2 bg-slate-700 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[11px] text-slate-400 mt-1 font-semibold">
+                <span>5 units</span>
+                <span>Break-Even: {result.breakEvenUnitsPerMonth} units</span>
+                <span>250 units</span>
+                <span>500 units</span>
+              </div>
+            </div>
+
+            {(() => {
+              const grossRevenue = simulatedUnits * form.sellingPrice;
+              const directCosts = simulatedUnits * result.totalDirectCostPerUnit;
+              const fixedOverhead = result.monthlyFixedCost;
+              const netMonthlyCash = (simulatedUnits * result.grossProfitPerUnit) - fixedOverhead;
+              const isBreakEvenMet = simulatedUnits >= result.breakEvenUnitsPerMonth;
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Gross Monthly Revenue
+                    </span>
+                    <span className="text-xl font-black text-white">
+                      ₹{grossRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[10px] text-indigo-300 block mt-0.5">₹{form.sellingPrice}/unit</span>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Direct Making Outflow
+                    </span>
+                    <span className="text-xl font-black text-slate-300">
+                      ₹{directCosts.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">BOM + Labour + Packaging</span>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Fixed Studio Overhead
+                    </span>
+                    <span className="text-xl font-black text-slate-300">
+                      ₹{fixedOverhead.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Rent & studio expenses</span>
+                  </div>
+
+                  <div className={`border rounded-2xl p-4 ${isBreakEvenMet ? 'bg-emerald-950/70 border-emerald-500/50' : 'bg-rose-950/70 border-rose-500/50'}`}>
+                    <span className="text-[10px] font-bold uppercase tracking-wider block mb-1 text-slate-300">
+                      Net Monthly Take-Home Cash
+                    </span>
+                    <span className={`text-2xl font-black ${isBreakEvenMet ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {netMonthlyCash >= 0 ? '+' : ''}₹{netMonthlyCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className={`text-[10px] font-bold block mt-0.5 ${isBreakEvenMet ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      {isBreakEvenMet ? '✅ Profitable operation' : `⚠️ Need ${result.breakEvenUnitsPerMonth - simulatedUnits} more units`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* GST Statutory Compliance & Action Plan Card */}
@@ -1811,6 +2658,113 @@ export default function CalculatorPage() {
                 className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl font-bold text-slate-700 cursor-pointer"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV / Excel Material Import Modal */}
+      {isCSVModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-2xl w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in duration-150">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">Import Materials from CSV / Excel</h3>
+                  <p className="text-xs text-slate-500">Paste spreadsheet rows from Excel, Google Sheets, or CSV</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCSVModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600">
+                <p className="font-bold text-slate-800 mb-1">Expected Format (Comma or Tab Separated):</p>
+                <p className="font-mono text-[11px] text-slate-700">
+                  Material Name, Pack Price, Pack Size, Unit, Input GST %, Quantity Used
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">Example: <code className="bg-white px-1 rounded border">Pure Coconut Oil, 420, 1000, ml, 5, 400</code></p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Paste Spreadsheet Lines
+                </label>
+                <textarea
+                  rows={6}
+                  value={csvText}
+                  onChange={(e) => setCsvText(e.target.value)}
+                  placeholder="Paste rows copied directly from Google Sheets or Excel..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {csvParseError && (
+                <div className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                  {csvParseError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-4 text-xs">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-semibold">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={csvImportMode === 'replace'}
+                      onChange={() => setCsvImportMode('replace')}
+                    />
+                    <span>Replace current materials</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-semibold">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={csvImportMode === 'append'}
+                      onChange={() => setCsvImportMode('append')}
+                    />
+                    <span>Append to existing</span>
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCsvText(
+                      `Pure Coconut Oil, 420, 1000, ml, 5, 400\nExtra Virgin Olive Oil, 850, 1000, ml, 5, 350\nRaw Shea Butter, 650, 500, g, 18, 150\nLye Beads, 220, 1000, g, 18, 130`
+                    );
+                  }}
+                  className="text-xs text-indigo-600 hover:underline font-semibold"
+                >
+                  Load Sample CSV
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCSVModalOpen(false)}
+                className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl font-bold text-xs text-slate-700 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleImportCSVData}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer"
+              >
+                Import to Recipe
               </button>
             </div>
           </div>

@@ -99,35 +99,95 @@ export default function DashboardPage() {
         <p className="text-xs text-slate-500 mb-6">
           Click any template below to explore a real-world product costing breakdown:
         </p>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Link
             href="/calculator"
-            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
           >
             <span className="text-2xl">🕯️</span>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Soy Jar Candle</h4>
-              <p className="text-[11px] text-slate-500">Wax, fragrance, jar, wick, label</p>
+              <h4 className="text-sm font-bold text-slate-900">Soy Jar Candle (200g)</h4>
+              <p className="text-[11px] text-slate-500">Wax, fragrance, jar, wick, label • HSN 3406</p>
             </div>
           </Link>
           <Link
             href="/calculator"
-            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
           >
             <span className="text-2xl">🧼</span>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Cold Process Soap</h4>
-              <p className="text-[11px] text-slate-500">Oils, lye, honey, packaging</p>
+              <h4 className="text-sm font-bold text-slate-900">Cold Process Soap Bar</h4>
+              <p className="text-[11px] text-slate-500">Coconut, olive, lye, honey • HSN 3401</p>
             </div>
           </Link>
           <Link
             href="/calculator"
-            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
           >
             <span className="text-2xl">🧁</span>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Artisan Babka Loaf</h4>
-              <p className="text-[11px] text-slate-500">Flour, butter, chocolate, sugar</p>
+              <h4 className="text-sm font-bold text-slate-900">Belgian Chocolate Brownies</h4>
+              <p className="text-[11px] text-slate-500">Couverture, butter, cocoa, walnuts • HSN 1905</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">🧴</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Vitamin C Serum (30ml)</h4>
+              <p className="text-[11px] text-slate-500">Hyaluronic, ferulic, amber dropper • HSN 3304</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">🎨</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Epoxy Resin Coaster 4-Pack</h4>
+              <p className="text-[11px] text-slate-500">Resin, hardener, pigments, gold leaf • HSN 3926</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">💍</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Polymer Clay Earrings</h4>
+              <p className="text-[11px] text-slate-500">Clay, 18K gold studs, UV glaze • HSN 7117</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">🧵</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Block-Print Cotton Tote</h4>
+              <p className="text-[11px] text-slate-500">Heavy canvas, natural indigo, straps • HSN 6204</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">🍫</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Peri Peri Makhana (100g)</h4>
+              <p className="text-[11px] text-slate-500">Jumbo foxnuts, spices, nitrogen pouch • HSN 1904</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
+          >
+            <span className="text-2xl">💻</span>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Notion OS & Digital Assets</h4>
+              <p className="text-[11px] text-slate-500">Zero freight, zero packaging, 18% GST • SAC 9984</p>
             </div>
           </Link>
         </div>
