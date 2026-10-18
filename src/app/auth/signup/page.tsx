@@ -27,11 +27,11 @@ function SignupForm() {
   const [email, setEmail] = useState('');
   const [businessName, setBusinessName] = useState('');
   
-  // Business category selection
+  // Business category selection (no silent default)
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialCategoryParam && BUSINESS_CATEGORIES.some((c) => c.id === initialCategoryParam)
       ? initialCategoryParam
-      : 'candles-fragrance'
+      : ''
   );
   const [isCustomCategory, setIsCustomCategory] = useState(initialCategoryParam === 'custom');
   const [customName, setCustomName] = useState('');
@@ -56,6 +56,10 @@ function SignupForm() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!selectedCategoryId && !isCustomCategory) {
+      setError('Please select what type of business you run to personalize your studio.');
       return;
     }
     if (isCustomCategory && !customName.trim()) {
@@ -207,9 +211,12 @@ function SignupForm() {
               }}
               className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs"
             >
+              <option value="" disabled>
+                -- Select what type of business you run --
+              </option>
               {BUSINESS_CATEGORIES.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name} {cat.id === 'candles-fragrance' ? '(Prominent)' : ''}
+                  {cat.icon} {cat.name} {cat.badge ? `(${cat.badge})` : ''}
                 </option>
               ))}
             </select>

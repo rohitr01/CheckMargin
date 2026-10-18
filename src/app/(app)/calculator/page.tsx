@@ -573,6 +573,14 @@ function CalculatorContent() {
   }
 
   function loadCategoryTemplate(catId: string, customTitle?: string) {
+    if (typeof window !== 'undefined' && catId !== 'blank') {
+      try {
+        localStorage.setItem('checkmargin_preferred_category', catId);
+      } catch {
+        // ignore storage errors
+      }
+    }
+
     if (catId === 'blank') {
       setActiveCategoryId('blank');
       setProductType('physical');
@@ -604,15 +612,42 @@ function CalculatorContent() {
     recalc(updatedForm, starterMaterials);
   }
 
-  // Load from searchParams or default
+  // Load from searchParams, user profile, or neutral starter (avoid silent candle default)
   useEffect(() => {
     if (categoryParam === 'blank') {
       loadCategoryTemplate('blank');
-    } else if (categoryParam) {
-      loadCategoryTemplate(categoryParam, productParam || undefined);
-    } else {
-      recalc(form, materials);
+      return;
     }
+    if (categoryParam) {
+      loadCategoryTemplate(categoryParam, productParam || undefined);
+      return;
+    }
+
+    async function resolveDefaultCategory() {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile?.business_category_id) {
+            loadCategoryTemplate(data.profile.business_category_id);
+            return;
+          }
+        }
+      } catch {
+        // unauthenticated or offline
+      }
+
+      const savedPref = typeof window !== 'undefined' ? localStorage.getItem('checkmargin_preferred_category') : null;
+      if (savedPref) {
+        loadCategoryTemplate(savedPref);
+        return;
+      }
+
+      // Neutral batch template if unauthenticated and no param
+      loadCategoryTemplate('custom', 'My Batch Product');
+    }
+
+    resolveDefaultCategory();
   }, [categoryParam, productParam]);
 
   function handleProductTypeSwitch(type: 'physical' | 'digital') {
