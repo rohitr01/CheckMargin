@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Building,
-  User,
   Sparkles,
   CheckCircle2,
   AlertCircle,
@@ -12,10 +11,8 @@ import {
   Save,
   CreditCard,
   ShieldCheck,
-  ArrowRight,
-  Layers,
 } from 'lucide-react';
-import { BUSINESS_CATEGORIES, getBusinessCategory } from '@/lib/business-categories';
+import { BUSINESS_CATEGORIES } from '@/lib/business-categories';
 
 export default function SettingsProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -32,7 +29,7 @@ export default function SettingsProfilePage() {
   const [customName, setCustomName] = useState('');
   const [customDesc, setCustomDesc] = useState('');
   const [customProduct, setCustomProduct] = useState('');
-  const [customProductType, setCustomProductType] = useState<'physical' | 'digital'>('physical');
+  const [customProductType, setCustomProductType] = useState<'physical' | 'digital' | 'service'>('physical');
 
   useEffect(() => {
     async function loadProfile() {
@@ -49,7 +46,13 @@ export default function SettingsProfilePage() {
           setCustomName(p.custom_category_name || '');
           setCustomDesc(p.custom_category_desc || '');
           setCustomProduct(p.custom_product_or_service || '');
-          setCustomProductType(p.custom_product_type === 'digital' ? 'digital' : 'physical');
+          setCustomProductType(
+            p.custom_product_type === 'digital'
+              ? 'digital'
+              : p.custom_product_type === 'service'
+              ? 'service'
+              : 'physical'
+          );
         }
       } catch (err) {
         console.warn('Failed to load profile settings:', err);
@@ -300,11 +303,12 @@ export default function SettingsProfilePage() {
                   </label>
                   <select
                     value={customProductType}
-                    onChange={(e) => setCustomProductType(e.target.value as 'physical' | 'digital')}
+                    onChange={(e) => setCustomProductType(e.target.value as 'physical' | 'digital' | 'service')}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="physical">📦 Physical Batch Manufactured Product</option>
                     <option value="digital">💻 Digital Download / File / Template</option>
+                    <option value="service">🛠️ Bespoke Service / Workshop / Custom Crafting</option>
                   </select>
                 </div>
 

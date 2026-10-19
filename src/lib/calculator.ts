@@ -175,7 +175,7 @@ export const CHANNEL_PRESETS: ChannelPreset[] = [
 
 export interface BatchInput {
   productName: string;
-  productType?: 'physical' | 'digital';
+  productType?: 'physical' | 'digital' | 'service';
   hsnCode?: string;         // e.g. '3406'
   materials: Material[];
   batchSize: number;        // total units made
@@ -412,7 +412,7 @@ export function calculateBatchCost(input: BatchInput): CalculationResult {
     isRegistered: input.isGSTRegistered,
     claimITC: input.claimITC,
     supplyType: input.supplyType,
-    hsnCode: input.hsnCode || '3406',
+    hsnCode: input.hsnCode || 'Unclassified',
     outputRatePercent: input.outputGSTRatePercent,
     grossSellingPrice: input.sellingPrice,
     taxableValue,
@@ -505,6 +505,7 @@ export interface TargetPriceInput {
   rtoLossPerReturn?: number;
   packagingPerUnit?: number;
   isGSTRegistered: boolean;
+  claimITC?: boolean;
   outputGSTRatePercent: number;
   isPriceGSTInclusive: boolean;
 }
@@ -516,7 +517,7 @@ export interface TargetPriceInput {
  *   - Direct manufacturing & craft labour cost
  *   - Marketplace referral/commission %
  *   - Fixed platform closing fees
- *   - 18% statutory GST on marketplace services
+ *   - 18% statutory GST on marketplace services (offset via ITC if registered maker claims ITC)
  *   - Outbound logistics / shipping
  *   - Customer Acquisition Cost (CAC / Ad Spend)
  *   - Customer returns & RTO loss reserve
@@ -529,7 +530,10 @@ export function solveTargetPrice(
 ): PriceScenario {
   const g = input.isGSTRegistered && input.isPriceGSTInclusive ? input.outputGSTRatePercent / 100 : 0;
   const fPct = input.platformFeePercent / 100;
-  const gs = (input.gstOnPlatformFeePercent ?? 18) / 100;
+  // If registered maker claims ITC, 18% GST on marketplace services is recovered as credit,
+  // so the effective cost burden to the maker is only the base fee.
+  const canClaimITC = input.isGSTRegistered && (input.claimITC ?? true);
+  const gs = canClaimITC ? 0 : (input.gstOnPlatformFeePercent ?? 18) / 100;
   const feeMultiplier = fPct * (1 + gs);
   const fixedFeeWithGST = input.platformFeeFixed * (1 + gs);
 
@@ -649,6 +653,7 @@ export function suggestPrices(
       rtoLossPerReturn: channelOptions.rtoLossPerReturn ?? 0,
       packagingPerUnit: channelOptions.packagingPerUnit ?? 0,
       isGSTRegistered: channelOptions.isGSTRegistered ?? false,
+      claimITC: channelOptions.claimITC ?? true,
       outputGSTRatePercent: channelOptions.outputGSTRatePercent ?? 0,
       isPriceGSTInclusive: channelOptions.isPriceGSTInclusive ?? true,
     };
@@ -695,7 +700,10 @@ export function generateShoppingList(
   currentBatchSaleableYield: number,
   currentBatchSize: number
 ): ShoppingListItem[] {
-  const yieldRatio = Math.max(currentBatchSaleableYield / Math.max(currentBatchSize, 1), 0.1);
+  if (currentBatchSaleableYield <= 0 || currentBatchSize <= 0) {
+    throw new Error('Cannot generate shopping list: saleable yield and batch size must be greater than zero.');
+  }
+  const yieldRatio = currentBatchSaleableYield / currentBatchSize;
   const requiredBatchSize = Math.ceil(targetSaleableUnits / yieldRatio);
 
   return materials.map((m) => {

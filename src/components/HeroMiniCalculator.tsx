@@ -169,7 +169,9 @@ export default function HeroMiniCalculator() {
               <span>GST Status:</span>
               <strong className="text-slate-900">
                 {activeCategory.starterInput.isGSTRegistered
-                  ? `HSN/SAC ${activeCategory.starterInput.hsnCode || '3406'} (${activeCategory.starterInput.outputGSTRatePercent}%)`
+                  ? activeCategory.starterInput.hsnCode
+                    ? `HSN/SAC ${activeCategory.starterInput.hsnCode} (${activeCategory.starterInput.outputGSTRatePercent}%)`
+                    : `Unclassified (${activeCategory.starterInput.outputGSTRatePercent}%)`
                   : 'Unregistered'}
               </strong>
             </div>

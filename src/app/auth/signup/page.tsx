@@ -36,7 +36,7 @@ function SignupForm() {
   const [isCustomCategory, setIsCustomCategory] = useState(initialCategoryParam === 'custom');
   const [customName, setCustomName] = useState('');
   const [customDesc, setCustomDesc] = useState('');
-  const [customProductType, setCustomProductType] = useState<'physical' | 'digital'>('physical');
+  const [customProductType, setCustomProductType] = useState<'physical' | 'digital' | 'service'>('physical');
 
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -98,10 +98,16 @@ function SignupForm() {
           }),
         });
         if (!profileRes.ok) {
-          console.warn('Profile sync returned non-OK status:', profileRes.status);
+          console.error('Initial business profile sync warning: returned status', profileRes.status);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('profile_sync_notice', 'Note: Initial category profile setup was deferred. Please verify your business profile in Settings.');
+          }
         }
       } catch (err) {
-        console.warn('Profile sync warning:', err);
+        console.error('Initial business profile sync exception:', err);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('profile_sync_notice', 'Note: Initial category profile setup was deferred. Please verify your business profile in Settings.');
+        }
       }
 
       // Route to workspace securely
@@ -249,11 +255,12 @@ function SignupForm() {
                   </label>
                   <select
                     value={customProductType}
-                    onChange={(e) => setCustomProductType(e.target.value as 'physical' | 'digital')}
+                    onChange={(e) => setCustomProductType(e.target.value as 'physical' | 'digital' | 'service')}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="physical">📦 Physical Product</option>
                     <option value="digital">💻 Digital Asset</option>
+                    <option value="service">🛠️ Bespoke Service / Workshop</option>
                   </select>
                 </div>
                 <div>

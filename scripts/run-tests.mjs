@@ -20,6 +20,7 @@ console.log('Compiling test suite with TypeScript...');
 const program = ts.createProgram(libFiles, {
   target: ts.ScriptTarget.ES2022,
   module: ts.ModuleKind.CommonJS,
+  moduleResolution: ts.ModuleResolutionKind.Node10,
   esModuleInterop: true,
   skipLibCheck: true,
   outDir: path.join(rootDir, '.test-dist'),

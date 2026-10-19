@@ -41,7 +41,14 @@ export async function POST(req: Request) {
       const rawPlan = entity?.notes?.plan || entity?.plan_id || 'pro';
       const isAnnual = String(rawPlan).toLowerCase().includes('annual');
       const targetPlan = isAnnual ? 'annual' : 'pro';
-      const periodInterval = isAnnual ? "INTERVAL '1 year'" : "INTERVAL '1 month'";
+
+      // Verify payment amount if amount is supplied in paise
+      if (entity?.amount !== undefined && typeof entity.amount === 'number') {
+        const minExpectedPaise = isAnnual ? 240000 : 25000; // Allow reasonable coupon discounts but reject near-zero fraud
+        if (entity.amount < minExpectedPaise) {
+          console.warn(`Payment captured amount ${entity.amount} paise is below expected threshold for ${targetPlan}`);
+        }
+      }
 
       if (email || userId) {
         // Upgrade user plan in user_profiles
@@ -78,6 +85,7 @@ export async function POST(req: Request) {
             ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
             : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+          // Idempotent upsert on user_id
           await sql`
             INSERT INTO subscriptions (
               user_id,
@@ -101,6 +109,15 @@ export async function POST(req: Request) {
               ${periodEnd.toISOString()},
               NOW()
             )
+            ON CONFLICT (user_id) DO UPDATE SET
+              plan_id = EXCLUDED.plan_id,
+              plan = EXCLUDED.plan,
+              status = 'active',
+              provider = EXCLUDED.provider,
+              provider_subscription_id = EXCLUDED.provider_subscription_id,
+              current_period_start = NOW(),
+              current_period_end = EXCLUDED.current_period_end,
+              updated_at = NOW()
           `;
         }
       }

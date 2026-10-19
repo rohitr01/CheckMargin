@@ -8,7 +8,7 @@ export interface BusinessCategory {
   badge?: string;
   tagline: string;
   description: string;
-  defaultProductType: 'physical' | 'digital';
+  defaultProductType: 'physical' | 'digital' | 'service';
   exampleProducts: string[];
   starterInput: BatchInput;
 }
@@ -37,11 +37,11 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
       productType: 'physical',
       hsnCode: '3406',
       materials: [
-        { name: 'Pure Soy Wax Flakes', packPrice: 850, packSize: 1, packUnit: 'kg', qtyUsed: 180, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Concentrated Fragrance Oil', packPrice: 1400, packSize: 100, packUnit: 'ml', qtyUsed: 15, qtyUnit: 'ml', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Frosted Glass Candle Jar (200ml)', packPrice: 700, packSize: 20, packUnit: 'piece', qtyUsed: 1, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Braided Cotton Wick + Metal Sustainer', packPrice: 150, packSize: 50, packUnit: 'piece', qtyUsed: 1, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
-        { name: 'Waterproof Studio Label', packPrice: 200, packSize: 50, packUnit: 'piece', qtyUsed: 1, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Pure Soy Wax Flakes', packPrice: 850, packSize: 1, packUnit: 'kg', qtyUsed: 1800, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Concentrated Fragrance Oil', packPrice: 1400, packSize: 100, packUnit: 'ml', qtyUsed: 140, qtyUnit: 'ml', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Frosted Glass Candle Jar (200ml)', packPrice: 700, packSize: 20, packUnit: 'piece', qtyUsed: 10, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Braided Cotton Wick + Metal Sustainer', packPrice: 150, packSize: 50, packUnit: 'piece', qtyUsed: 10, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
+        { name: 'Waterproof Studio Label', packPrice: 200, packSize: 50, packUnit: 'piece', qtyUsed: 10, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
       ],
       batchSize: 10,
       failedUnits: 1,
@@ -61,7 +61,7 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
       isGSTRegistered: true,
       claimITC: true,
       supplyType: 'intra-state',
-      outputGSTRatePercent: 5,
+      outputGSTRatePercent: 12,
       isPriceGSTInclusive: true,
       monthlyFixedCost: 15000,
     },
@@ -81,10 +81,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
       productType: 'physical',
       hsnCode: '3926',
       materials: [
-        { name: '2:1 Epoxy Resin + Hardener Kit', packPrice: 1800, packSize: 1500, packUnit: 'g', qtyUsed: 350, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Metallic Pigment Paste & Mica Powder', packPrice: 450, packSize: 100, packUnit: 'g', qtyUsed: 20, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Teakwood Cut-Out Bases', packPrice: 400, packSize: 10, packUnit: 'piece', qtyUsed: 4, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
-        { name: 'Silicone Mold Depreciation Allowance', packPrice: 650, packSize: 30, packUnit: 'piece', qtyUsed: 1, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: '2:1 Epoxy Resin + Hardener Kit', packPrice: 1800, packSize: 1500, packUnit: 'g', qtyUsed: 500, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Metallic Pigment Paste & Mica Powder', packPrice: 450, packSize: 100, packUnit: 'g', qtyUsed: 25, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Teakwood Cut-Out Bases', packPrice: 400, packSize: 10, packUnit: 'piece', qtyUsed: 5, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
+        { name: 'Silicone Mold Depreciation Allowance', packPrice: 650, packSize: 30, packUnit: 'piece', qtyUsed: 5, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
       ],
       batchSize: 5,
       failedUnits: 0,
@@ -127,7 +127,7 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
         { name: 'Jesmonite AC100 Base Powder & Liquid', packPrice: 2200, packSize: 3500, packUnit: 'g', qtyUsed: 1200, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
         { name: 'Terrazzo Chips & Liquid Pigment', packPrice: 500, packSize: 200, packUnit: 'g', qtyUsed: 50, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
         { name: 'Waterproof Acrylic Penetrating Sealer', packPrice: 600, packSize: 500, packUnit: 'ml', qtyUsed: 60, qtyUnit: 'ml', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Protective Self-Adhesive Cork Base', packPrice: 150, packSize: 20, packUnit: 'piece', qtyUsed: 4, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Protective Self-Adhesive Cork Base', packPrice: 150, packSize: 20, packUnit: 'piece', qtyUsed: 6, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
       ],
       batchSize: 6,
       failedUnits: 1,
@@ -256,10 +256,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
       productType: 'physical',
       hsnCode: '6204',
       materials: [
-        { name: 'Heavy Organic Canvas Fabric (350 GSM)', packPrice: 1200, packSize: 5, packUnit: 'metre', qtyUsed: 1.5, qtyUnit: 'metre', gstRatePercent: 5, isPackPriceGSTInclusive: true },
-        { name: 'Cotton Webbing Handles & Straps', packPrice: 250, packSize: 10, packUnit: 'metre', qtyUsed: 2.2, qtyUnit: 'metre', gstRatePercent: 12, isPackPriceGSTInclusive: true },
-        { name: 'Natural Indigo Vegetable Printing Dye', packPrice: 400, packSize: 500, packUnit: 'g', qtyUsed: 50, qtyUnit: 'g', gstRatePercent: 12, isPackPriceGSTInclusive: true },
-        { name: 'Woven Brand Label + Cotton Drawstring Pouch', packPrice: 350, packSize: 20, packUnit: 'piece', qtyUsed: 2, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
+        { name: 'Heavy Organic Canvas Fabric (350 GSM)', packPrice: 1200, packSize: 5, packUnit: 'metre', qtyUsed: 3, qtyUnit: 'metre', gstRatePercent: 5, isPackPriceGSTInclusive: true },
+        { name: 'Cotton Webbing Handles & Straps', packPrice: 250, packSize: 10, packUnit: 'metre', qtyUsed: 6, qtyUnit: 'metre', gstRatePercent: 12, isPackPriceGSTInclusive: true },
+        { name: 'Natural Indigo Vegetable Printing Dye', packPrice: 400, packSize: 500, packUnit: 'g', qtyUsed: 60, qtyUnit: 'g', gstRatePercent: 12, isPackPriceGSTInclusive: true },
+        { name: 'Woven Brand Label + Cotton Drawstring Pouch', packPrice: 350, packSize: 20, packUnit: 'piece', qtyUsed: 6, qtyUnit: 'piece', gstRatePercent: 12, isPackPriceGSTInclusive: true },
       ],
       batchSize: 6,
       failedUnits: 0,
@@ -384,9 +384,9 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
       productType: 'physical',
       hsnCode: '',
       materials: [
-        { name: 'Primary Raw Material', packPrice: 500, packSize: 1, packUnit: 'kg', qtyUsed: 200, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Secondary Component / Additive', packPrice: 300, packSize: 100, packUnit: 'ml', qtyUsed: 15, qtyUnit: 'ml', gstRatePercent: 18, isPackPriceGSTInclusive: true },
-        { name: 'Container / Vessel / Base', packPrice: 200, packSize: 10, packUnit: 'piece', qtyUsed: 1, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Primary Raw Material', packPrice: 500, packSize: 1, packUnit: 'kg', qtyUsed: 1500, qtyUnit: 'g', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Secondary Component / Additive', packPrice: 300, packSize: 100, packUnit: 'ml', qtyUsed: 100, qtyUnit: 'ml', gstRatePercent: 18, isPackPriceGSTInclusive: true },
+        { name: 'Container / Vessel / Base', packPrice: 200, packSize: 10, packUnit: 'piece', qtyUsed: 10, qtyUnit: 'piece', gstRatePercent: 18, isPackPriceGSTInclusive: true },
       ],
       batchSize: 10,
       failedUnits: 1,

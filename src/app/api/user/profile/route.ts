@@ -114,23 +114,29 @@ export async function POST(req: Request) {
     const businessName = body.businessName?.trim() ?? '';
 
     // Business category handling
-    const rawCategoryId = body.businessCategoryId || body.primaryIndustry || 'candles-fragrance';
+    const rawCategoryId = body.businessCategoryId || body.primaryIndustry;
     const isCustom = Boolean(body.isCustomCategory || rawCategoryId === 'custom');
     const customCategoryName = body.customCategoryName?.trim() || null;
     const customCategoryDesc = body.customCategoryDesc?.trim() || null;
     const customProductOrService = body.customProductOrService?.trim() || null;
-    const customProductType = body.customProductType === 'digital' ? 'digital' : 'physical';
+    const customProductType =
+      body.customProductType === 'digital'
+        ? 'digital'
+        : body.customProductType === 'service'
+        ? 'service'
+        : 'physical';
 
     // Resolve human-readable category name
-    let primaryIndustryName = 'Candles & Fragrance';
+    let primaryIndustryName = 'General Products';
+    let businessCategoryId = 'custom';
     if (isCustom && customCategoryName) {
       primaryIndustryName = customCategoryName;
-    } else {
+      businessCategoryId = 'custom';
+    } else if (rawCategoryId) {
       const cat = getBusinessCategory(rawCategoryId);
       primaryIndustryName = cat.name;
+      businessCategoryId = cat.id;
     }
-
-    const businessCategoryId = isCustom ? 'custom' : getBusinessCategory(rawCategoryId).id;
 
     const result = await sql`
       INSERT INTO user_profiles (

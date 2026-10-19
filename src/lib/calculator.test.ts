@@ -1,8 +1,7 @@
-// Strict unit tests for the CheckMargin calculation engine using node:assert
-import assert from 'node:assert';
+// Strict unit tests for the CheckMargin calculation engine using assert
+import assert from 'assert';
 import {
   calculateBatchCost,
-  suggestPrices,
   solveTargetPrice,
   generateShoppingList,
   calculateWholesaleTiers,
@@ -68,7 +67,7 @@ const sampleInput: BatchInput = {
   isGSTRegistered: true,
   claimITC: true,
   supplyType: 'intra-state',
-  outputGSTRatePercent: 5, // Handcrafted candles under HSN 3406
+  outputGSTRatePercent: 12, // Handcrafted candles under HSN 3406 (CBIC Schedule II, Sl. No. 63)
   isPriceGSTInclusive: true,
   monthlyFixedCost: 10000,
 };
@@ -167,7 +166,8 @@ const solved = solveTargetPrice(
     rtoLossPerReturn: 80,
     packagingPerUnit: 20,
     isGSTRegistered: true,
-    outputGSTRatePercent: 5,
+    claimITC: true,
+    outputGSTRatePercent: 12,
     isPriceGSTInclusive: true,
   },
   'target-margin',
@@ -180,7 +180,19 @@ assert.ok(
   Math.abs(solved.marginPercent - targetMargin) < 0.5,
   `Actual margin ${solved.marginPercent}% must match target ${targetMargin}% within 0.5%`
 );
-console.log(`✅ Solved price ₹${solved.suggestedPrice} gives ${solved.marginPercent}% margin (target: ${targetMargin}%).`);
+
+// Closed-loop verification: plugging solved price back into calculateBatchCost must reproduce the target margin
+const recalculatedWithSolved = calculateBatchCost({
+  ...sampleInput,
+  sellingPrice: solved.suggestedPrice,
+  outputGSTRatePercent: 12,
+  claimITC: true,
+});
+assert.ok(
+  Math.abs(recalculatedWithSolved.grossMarginPercent - targetMargin) < 0.6,
+  `Re-calculated margin ${recalculatedWithSolved.grossMarginPercent}% must match target margin ${targetMargin}%`
+);
+console.log(`✅ Solved price ₹${solved.suggestedPrice} gives ${solved.marginPercent}% margin (target: ${targetMargin}%, recalculated: ${recalculatedWithSolved.grossMarginPercent.toFixed(1)}%).`);
 
 // Test mathematically unattainable target margin
 const unattainable = solveTargetPrice(
@@ -198,11 +210,11 @@ const unattainable = solveTargetPrice(
   95
 );
 assert.strictEqual(unattainable.isAttainable, false, '95% margin under high fees must be detected as unattainable');
-assert.ok(unattainable.unattainableReason?.length! > 0, 'Must provide an explanation for unattainable margin');
+assert.ok((unattainable.unattainableReason?.length ?? 0) > 0, 'Must provide an explanation for unattainable margin');
 console.log('✅ Unattainable target margin correctly flagged with explanation.');
 
 // ==========================================
-// Test 8: Shopping List Unit Normalization (Recipe 'g' vs Supplier 'kg')
+// Test 8: Shopping List Unit Normalization & Zero-Yield Guard
 // ==========================================
 console.log('\n--- Test 8: Shopping List Unit Normalization ---');
 const materialsForShopping = [
@@ -212,6 +224,12 @@ const materialsForShopping = [
   { name: 'Soy Wax', packPrice: 800, packSize: 1, packUnit: 'kg', qtyUsed: 150, qtyUnit: 'g' },
   { name: 'Wick', packPrice: 100, packSize: 50, packUnit: 'piece', qtyUsed: 10, qtyUnit: 'piece' },
 ];
+
+assert.throws(
+  () => generateShoppingList(materialsForShopping, 30, 0, 10),
+  /Cannot generate shopping list: saleable yield and batch size must be greater than zero/,
+  'Zero yield in shopping list generation must throw descriptive error'
+);
 
 const shoppingList = generateShoppingList(materialsForShopping, 30, 9, 10);
 const soyWaxItem = shoppingList.find((i) => i.name === 'Soy Wax')!;

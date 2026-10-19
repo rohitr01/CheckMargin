@@ -49,7 +49,7 @@ const DEFAULT_PRESETS: SavedProduct[] = [
   {
     id: 'demo-1',
     title: 'Handcrafted 200g Vanilla Soy Candle',
-    category: 'HSN 3406 (5% GST)',
+    category: 'HSN 3406 (12% GST)',
     unitCost: '₹264.40',
     sellingPrice: '₹599.00',
     margin: '53.7%',

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check, Sparkles, HelpCircle, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Check, Sparkles, ArrowRight } from 'lucide-react';
 
 const plans = [
   {

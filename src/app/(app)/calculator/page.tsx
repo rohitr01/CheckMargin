@@ -62,7 +62,7 @@ import {
 } from 'lucide-react';
 
 const HSN_PRESETS = [
-  { code: '3406', name: 'Candles & Tapers', defaultRate: 5 },
+  { code: '3406', name: 'Candles & Tapers', defaultRate: 12 },
   { code: '3401', name: 'Soaps & Cleansing Bars', defaultRate: 5 },
   { code: '1905', name: 'Bakery, Cakes, Biscuits', defaultRate: 5 },
   { code: '3304', name: 'Cosmetics, Skincare, Serums', defaultRate: 18 },
@@ -224,7 +224,7 @@ const INITIAL_FORM: BatchInput = {
   isGSTRegistered: true,
   claimITC: true,
   supplyType: 'intra-state',
-  outputGSTRatePercent: 5,
+  outputGSTRatePercent: 12,
   isPriceGSTInclusive: true,
   monthlyFixedCost: 15000,
 };
@@ -235,7 +235,7 @@ const PHYSICAL_PRESETS = [
     industry: 'Candles & Wax Melts',
     name: 'Handcrafted 200g Vanilla Soy Candle',
     hsnCode: '3406',
-    outputGSTRatePercent: 5,
+    outputGSTRatePercent: 12,
     sellingPrice: 599,
     channelId: 'amazon',
     platformFeePercent: 12,
@@ -546,7 +546,7 @@ function CalculatorContent() {
   const productParam = searchParams.get('product');
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('candles-fragrance');
-  const [productType, setProductType] = useState<'physical' | 'digital'>('physical');
+  const [productType, setProductType] = useState<'physical' | 'digital' | 'service'>('physical');
   const [activePhysicalPresetId, setActivePhysicalPresetId] = useState<string>('candle');
   const [activeDigitalPresetId, setActiveDigitalPresetId] = useState<string>('');
   const [selectedCourier, setSelectedCourier] = useState('custom');
@@ -615,11 +615,11 @@ function CalculatorContent() {
   // Load from searchParams, user profile, or neutral starter (avoid silent candle default)
   useEffect(() => {
     if (categoryParam === 'blank') {
-      loadCategoryTemplate('blank');
+      queueMicrotask(() => loadCategoryTemplate('blank'));
       return;
     }
     if (categoryParam) {
-      loadCategoryTemplate(categoryParam, productParam || undefined);
+      queueMicrotask(() => loadCategoryTemplate(categoryParam, productParam || undefined));
       return;
     }
 
@@ -629,7 +629,10 @@ function CalculatorContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.profile?.business_category_id) {
-            loadCategoryTemplate(data.profile.business_category_id);
+            loadCategoryTemplate(
+              data.profile.business_category_id,
+              data.profile.custom_category_name || undefined
+            );
             return;
           }
         }
@@ -650,21 +653,21 @@ function CalculatorContent() {
     resolveDefaultCategory();
   }, [categoryParam, productParam]);
 
-  function handleProductTypeSwitch(type: 'physical' | 'digital') {
+  function handleProductTypeSwitch(type: 'physical' | 'digital' | 'service') {
     setProductType(type);
-    if (type === 'digital') {
+    if (type === 'digital' || type === 'service') {
       const updated: BatchInput = {
         ...form,
-        productType: 'digital',
-        hsnCode: '9984',
+        productType: type,
+        hsnCode: type === 'digital' ? '9984' : (form.hsnCode && form.hsnCode !== '9984' ? form.hsnCode : '9983'),
         outputGSTRatePercent: 18,
         failedUnits: 0,
         packagingPerUnit: 0,
         shippingPerOrder: 0,
         rtoRatePercent: 0,
         rtoLossPerReturn: 0,
-        channelId: 'gumroad',
-        platformFeePercent: 10,
+        channelId: type === 'digital' ? 'gumroad' : 'direct',
+        platformFeePercent: type === 'digital' ? 10 : 2,
         platformFeeFixed: 0,
       };
       setSelectedCourier('custom');
@@ -674,16 +677,16 @@ function CalculatorContent() {
       const updated: BatchInput = {
         ...form,
         productType: 'physical',
-        hsnCode: '3406',
-        outputGSTRatePercent: 5,
-        failedUnits: 1,
-        packagingPerUnit: 25,
-        shippingPerOrder: 65,
-        rtoRatePercent: 8,
-        rtoLossPerReturn: 90,
-        channelId: 'amazon',
-        platformFeePercent: 12,
-        platformFeeFixed: 15,
+        hsnCode: form.hsnCode && form.hsnCode !== '9984' && form.hsnCode !== '9983' ? form.hsnCode : '',
+        outputGSTRatePercent: form.outputGSTRatePercent > 0 ? form.outputGSTRatePercent : 18,
+        failedUnits: form.failedUnits || 1,
+        packagingPerUnit: form.packagingPerUnit || 25,
+        shippingPerOrder: form.shippingPerOrder || 65,
+        rtoRatePercent: form.rtoRatePercent || 8,
+        rtoLossPerReturn: form.rtoLossPerReturn || 90,
+        channelId: form.channelId || 'amazon',
+        platformFeePercent: form.platformFeePercent || 12,
+        platformFeeFixed: form.platformFeeFixed || 15,
       };
       setSelectedCourier('shiprocket');
       setForm(updated);
@@ -998,6 +1001,7 @@ function CalculatorContent() {
           rtoLossPerReturn: form.rtoLossPerReturn,
           packagingPerUnit: form.packagingPerUnit,
           isGSTRegistered: form.isGSTRegistered,
+          claimITC: form.claimITC,
           outputGSTRatePercent: form.outputGSTRatePercent,
           isPriceGSTInclusive: form.isPriceGSTInclusive,
         }
@@ -1146,6 +1150,18 @@ function CalculatorContent() {
               >
                 <Laptop className="w-4 h-4" />
                 <span>💻 Digital Downloads & Software</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleProductTypeSwitch('service')}
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  productType === 'service'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>🛠️ Craft Service / Workshop</span>
               </button>
             </div>
           </div>
@@ -2407,12 +2423,20 @@ function CalculatorContent() {
                   Legal Classification
                 </span>
                 <div className="text-base font-black text-white">
-                  {productType === 'digital' ? 'OIDAR Digital Service' : 'Tangible Physical Goods'}
+                  {productType === 'digital'
+                    ? 'OIDAR Digital Service'
+                    : productType === 'service'
+                    ? 'Bespoke Craft / Production Service'
+                    : 'Tangible Physical Goods'}
                 </div>
                 <span className="text-[11px] text-slate-300 block mt-1">
-                  {productType === 'digital'
-                    ? `SAC ${form.hsnCode || '9984'} (Sec 2(17) IGST)`
-                    : `HSN ${form.hsnCode || '3406'} (Sec 2(52) CGST)`}
+                  {productType === 'digital' || productType === 'service'
+                    ? form.hsnCode
+                      ? `SAC ${form.hsnCode} (Services Tariff)`
+                      : 'SAC Unclassified (Services Tariff)'
+                    : form.hsnCode
+                    ? `HSN ${form.hsnCode} (Sec 2(52) CGST)`
+                    : 'HSN Unclassified (Sec 2(52) CGST)'}
                 </span>
               </div>
 
