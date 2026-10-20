@@ -26,7 +26,10 @@ export async function POST(req: Request) {
       .update(rawBody)
       .digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSignature);
+
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
     }
 
@@ -46,7 +49,8 @@ export async function POST(req: Request) {
       if (entity?.amount !== undefined && typeof entity.amount === 'number') {
         const minExpectedPaise = isAnnual ? 240000 : 25000; // Allow reasonable coupon discounts but reject near-zero fraud
         if (entity.amount < minExpectedPaise) {
-          console.warn(`Payment captured amount ${entity.amount} paise is below expected threshold for ${targetPlan}`);
+          console.error(`Fraud prevention: Payment captured amount ${entity.amount} paise is below required threshold ${minExpectedPaise} for ${targetPlan}`);
+          return NextResponse.json({ error: 'Payment amount verification failed' }, { status: 400 });
         }
       }
 
@@ -81,6 +85,19 @@ export async function POST(req: Request) {
 
         if (subUserId) {
           const providerSubId = entity?.id || `sub_${Date.now()}`;
+
+          // Replay defense: verify if this exact transaction/subscription was already processed
+          const existingSub = await sql`
+            SELECT id, provider_subscription_id
+            FROM subscriptions
+            WHERE user_id = ${subUserId} AND provider_subscription_id = ${providerSubId}
+            LIMIT 1
+          `;
+
+          if (existingSub.length > 0) {
+            return NextResponse.json({ received: true, status: 'already_processed' });
+          }
+
           const periodEnd = isAnnual
             ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
             : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -125,8 +142,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ received: true });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Webhook error';
     console.error('Billing webhook error:', err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while processing the webhook event' },
+      { status: 500 }
+    );
   }
 }

@@ -93,9 +93,11 @@ export async function GET() {
 
     return NextResponse.json({ profile: inserted[0], user: session.user });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch profile';
     console.error('Error fetching user profile:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while fetching your user profile.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -208,8 +210,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ profile: result[0], success: true });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to update profile';
     console.error('Error updating user profile:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while updating your user profile.' },
+      { status: 500 }
+    );
   }
 }

@@ -64,8 +64,10 @@ export async function POST(req: Request) {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Checkout initiation failed';
-    console.error('Checkout error:', err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Checkout initiation error:', err);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while initiating your checkout session.' },
+      { status: 500 }
+    );
   }
 }

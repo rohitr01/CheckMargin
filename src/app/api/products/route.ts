@@ -46,9 +46,11 @@ export async function GET() {
       entitlements,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch products';
     console.error('Error fetching products:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while fetching products.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -101,6 +103,14 @@ export async function POST(req: Request) {
     const batchInput = body.batchInput ? JSON.stringify(body.batchInput) : null;
     const calculationResult = body.calculationResult ? JSON.stringify(body.calculationResult) : null;
 
+    // Defense-in-depth: limit stored JSONB size to 64KB to prevent DB resource exhaustion
+    if (batchInput && batchInput.length > 65536) {
+      return NextResponse.json({ error: 'Recipe input data exceeds maximum allowable limit (64KB).' }, { status: 400 });
+    }
+    if (calculationResult && calculationResult.length > 65536) {
+      return NextResponse.json({ error: 'Calculation result data exceeds maximum allowable limit (64KB).' }, { status: 400 });
+    }
+
     const inserted = await sql`
       INSERT INTO products (
         user_id,
@@ -143,9 +153,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ product: inserted[0], success: true }, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to save product';
     console.error('Error saving product:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while saving the product recipe.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -158,10 +170,10 @@ export async function DELETE(req: Request) {
 
     const userId = session.user.id;
     const { searchParams } = new URL(req.url);
-    const productId = searchParams.get('id');
+    const productId = searchParams.get('id')?.trim();
 
-    if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    if (!productId || productId.length > 128) {
+      return NextResponse.json({ error: 'A valid product ID is required.' }, { status: 400 });
     }
 
     await sql`
@@ -171,8 +183,10 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to delete product';
     console.error('Error deleting product:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while deleting the product recipe.' },
+      { status: 500 }
+    );
   }
 }
