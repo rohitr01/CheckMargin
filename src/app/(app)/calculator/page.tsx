@@ -23,6 +23,7 @@ import {
   type SubCategory,
   findSubCategory,
 } from '@/lib/business-categories';
+import CategoryMarketingGuideCard from '@/components/CategoryMarketingGuideCard';
 import {
   Calculator,
   Plus,
@@ -1939,6 +1940,18 @@ function CalculatorContent() {
             </div>
           )}
         </div>
+
+        {/* Section 5.5: Category Marketing, Ads & Sales Channel Playbook */}
+        <CategoryMarketingGuideCard
+          categoryId={activeCategoryId === 'blank' ? 'custom' : activeCategoryId}
+          sellingPrice={form.sellingPrice}
+          netProfit={result?.grossProfitPerUnit || 0}
+          onApplySuggestedCAC={(cac) => {
+            const updated = { ...form, adSpendPerUnit: cac };
+            setForm(updated);
+            recalc(updated, materials);
+          }}
+        />
 
         {/* Section 6: Full GST Operating Center (Input, Output, ITC) */}
         <div className="bg-white border-2 border-indigo-200 rounded-3xl p-6 md:p-8 shadow-xs">

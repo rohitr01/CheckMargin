@@ -42,6 +42,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">
               GST & HSN Guide
             </Link>
+            <Link href="/marketing-guide" className="hover:text-indigo-600 transition-colors">
+              Marketing & Ads Guide
+            </Link>
             <Link href="/compare" className="hover:text-indigo-600 transition-colors">
               Compare Couriers
             </Link>
@@ -102,6 +105,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Product</h4>
               <ul className="space-y-2.5 text-sm text-slate-600 font-medium">
                 <li><Link href="/calculator" className="hover:text-indigo-600 transition-colors">Live Batch Calculator</Link></li>
+                <li><Link href="/marketing-guide" className="hover:text-indigo-600 transition-colors">Marketing & Ads Playbook</Link></li>
                 <li><Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">GST & HSN Guide</Link></li>
                 <li><Link href="/compare" className="hover:text-indigo-600 transition-colors">Compare Couriers & Platforms</Link></li>
                 <li><Link href="/features" className="hover:text-indigo-600 transition-colors">Features & Capabilities</Link></li>
