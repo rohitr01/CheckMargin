@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Calculator, ArrowRight, TrendingUp, Sparkles, AlertCircle, CheckCircle2, Sliders } from 'lucide-react';
+import { Calculator, ArrowRight, TrendingUp, Sparkles, AlertCircle, CheckCircle2, Sliders, Layers } from 'lucide-react';
 import { calculateBatchCost, CHANNEL_PRESETS, type BatchInput } from '@/lib/calculator';
-import { BUSINESS_CATEGORIES, BusinessCategory } from '@/lib/business-categories';
+import { BUSINESS_CATEGORIES, BusinessCategory, SubCategory } from '@/lib/business-categories';
 
 export default function HeroMiniCalculator() {
   const [activeCategory, setActiveCategory] = useState<BusinessCategory>(BUSINESS_CATEGORIES[0]);
+  const [activeSubCategory, setActiveSubCategory] = useState<SubCategory | null>(
+    BUSINESS_CATEGORIES[0].subCategories?.[0] || null
+  );
   const [sellingPrice, setSellingPrice] = useState(BUSINESS_CATEGORIES[0].starterInput.sellingPrice);
   const [selectedChannel, setSelectedChannel] = useState(BUSINESS_CATEGORIES[0].starterInput.channelId || 'amazon');
   
@@ -18,7 +21,12 @@ export default function HeroMiniCalculator() {
 
   const currentInput: BatchInput = {
     ...activeCategory.starterInput,
-    productName: activeCategory.id === 'custom' ? customProductName : activeCategory.starterInput.productName,
+    productName:
+      activeCategory.id === 'custom'
+        ? customProductName
+        : activeSubCategory?.starterProductName || activeCategory.starterInput.productName,
+    hsnCode: activeSubCategory?.hsnCode || activeCategory.starterInput.hsnCode,
+    outputGSTRatePercent: activeSubCategory?.defaultRate ?? activeCategory.starterInput.outputGSTRatePercent,
     sellingPrice: sellingPrice,
     channelId: channelPreset.id,
     platformFeePercent: channelPreset.feePercent,
@@ -31,8 +39,13 @@ export default function HeroMiniCalculator() {
 
   function handleCategoryChange(cat: BusinessCategory) {
     setActiveCategory(cat);
+    setActiveSubCategory(cat.subCategories?.[0] || null);
     setSellingPrice(cat.starterInput.sellingPrice);
     setSelectedChannel(cat.starterInput.channelId || 'amazon');
+  }
+
+  function handleSubCategoryChange(sub: SubCategory) {
+    setActiveSubCategory(sub);
   }
 
   const isProfitable = result.grossProfitPerUnit > 0;
@@ -40,21 +53,21 @@ export default function HeroMiniCalculator() {
   return (
     <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 text-left max-w-4xl mx-auto">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
+      <div className="flex flex-col pb-6 border-b border-slate-100 gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md mb-2">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
             <span>Interactive Business Costing Simulator</span>
           </div>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">
-            See Unit Economics by Business Type
+            See Unit Economics by Business Category
           </h3>
           <p className="text-xs text-slate-500">
-            Select a broad category or customize your own to test how batch yield, labour, and marketplace fees shape true profit.
+            Select a broad category and sub-category to test how batch yield, labour, and marketplace fees shape true profit.
           </p>
         </div>
 
-        {/* Category Pills (Broad categories with Candles & Fragrance prominent) */}
+        {/* Category Pills (9 Main Categories) */}
         <div className="flex flex-wrap gap-1.5">
           {BUSINESS_CATEGORIES.map((cat) => {
             const isActive = activeCategory.id === cat.id;
@@ -79,6 +92,34 @@ export default function HeroMiniCalculator() {
             );
           })}
         </div>
+
+        {/* Sub-Category Pills for Active Category */}
+        {activeCategory.subCategories && activeCategory.subCategories.length > 0 && (
+          <div className="pt-2 flex flex-wrap items-center gap-1.5 border-t border-slate-100">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+              <Layers className="w-3 h-3 text-indigo-600" />
+              Sub-Category:
+            </span>
+            {activeCategory.subCategories.map((sub) => {
+              const isSubActive = activeSubCategory?.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => handleSubCategoryChange(sub)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                    isSubActive
+                      ? 'bg-indigo-100 text-indigo-800 border border-indigo-300 font-bold'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  <span>{sub.icon}</span>
+                  <span>{sub.name}</span>
+                  <span className="text-[9px] text-slate-400 font-bold">HSN {sub.hsnCode}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Simulator Controls & Output Grid */}
@@ -103,77 +144,61 @@ export default function HeroMiniCalculator() {
             <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
-                  Demonstration Recipe ({activeCategory.name})
+                  {activeCategory.name} • HSN {activeSubCategory?.hsnCode || activeCategory.starterInput.hsnCode} ({activeSubCategory?.defaultRate ?? activeCategory.starterInput.outputGSTRatePercent}% GST)
                 </span>
-                <span className="text-sm font-black text-slate-900">{activeCategory.starterInput.productName}</span>
+                <span className="text-sm font-black text-slate-900">
+                  {activeSubCategory?.starterProductName || activeCategory.starterInput.productName}
+                </span>
               </div>
-              <span className="text-xl">{activeCategory.icon}</span>
+              <span className="text-xl">{activeSubCategory?.icon || activeCategory.icon}</span>
             </div>
           )}
 
           <div>
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-              <label>Customer Selling Price</label>
-              <span className="text-base font-black text-indigo-600">₹{sellingPrice}</span>
+              <span>Customer Selling Price</span>
+              <span className="text-indigo-600 text-sm font-black">₹{sellingPrice}</span>
             </div>
             <input
               type="range"
-              min={Math.max(50, Math.round(result.totalDirectCostPerUnit * 0.8))}
-              max={Math.max(200, Math.round(result.totalDirectCostPerUnit * 3.5))}
-              step={10}
+              min="100"
+              max="2500"
+              step="25"
               value={sellingPrice}
               onChange={(e) => setSellingPrice(Number(e.target.value))}
-              className="w-full accent-indigo-600 cursor-pointer"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
             />
-            <div className="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>Low (₹{Math.max(50, Math.round(result.totalDirectCostPerUnit * 0.8))})</span>
-              <span>Target (₹{sellingPrice})</span>
-              <span>High (₹{Math.max(200, Math.round(result.totalDirectCostPerUnit * 3.5))})</span>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-semibold">
+              <span>₹100 (Affordable)</span>
+              <span>₹1,200 (Mid-tier)</span>
+              <span>₹2,500 (Premium)</span>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Sales Channel Preset
+              Selling Channel / Logistics
             </label>
-            <select
-              value={selectedChannel}
-              onChange={(e) => setSelectedChannel(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {CHANNEL_PRESETS.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-              {channelPreset.notes}
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
-            <div className="flex justify-between">
-              <span>Batch Run Size:</span>
-              <strong className="text-slate-900">{activeCategory.starterInput.batchSize} units</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Defect Scrap Rate:</span>
-              <span className="text-rose-600 font-semibold">{activeCategory.starterInput.failedUnits} unit ({result.yieldEfficiencyPercent.toFixed(0)}% yield)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Direct Craft Labour:</span>
-              <strong className="text-slate-900">{activeCategory.starterInput.labourMinutes} mins (@ ₹{activeCategory.starterInput.labourHourlyRate}/hr)</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>GST Status:</span>
-              <strong className="text-slate-900">
-                {activeCategory.starterInput.isGSTRegistered
-                  ? activeCategory.starterInput.hsnCode
-                    ? `HSN/SAC ${activeCategory.starterInput.hsnCode} (${activeCategory.starterInput.outputGSTRatePercent}%)`
-                    : `Unclassified (${activeCategory.starterInput.outputGSTRatePercent}%)`
-                  : 'Unregistered'}
-              </strong>
+            <div className="grid grid-cols-2 gap-2">
+              {CHANNEL_PRESETS.map((ch) => {
+                const isChActive = selectedChannel === ch.id;
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => setSelectedChannel(ch.id)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isChActive
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-bold ring-1 ring-indigo-500'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">{ch.name}</div>
+                    <div className="text-[10px] text-slate-500">
+                      {ch.feePercent}% + ₹{ch.shipping} ship
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -233,10 +258,10 @@ export default function HeroMiniCalculator() {
 
           {/* Launch Link */}
           <Link
-            href={`/calculator?category=${activeCategory.id}`}
+            href={`/calculator?category=${activeCategory.id}${activeSubCategory?.presetId ? `&preset=${activeSubCategory.presetId}` : activeSubCategory ? `&subCategory=${activeSubCategory.id}` : ''}`}
             className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:gap-3 cursor-pointer"
           >
-            <span>Open {activeCategory.name} in Full Batch Studio</span>
+            <span>Open {activeSubCategory?.name || activeCategory.name} in Full Batch Studio</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

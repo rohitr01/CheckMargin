@@ -20,6 +20,8 @@ import {
   BUSINESS_CATEGORIES,
   getBusinessCategory,
   type BusinessCategory,
+  type SubCategory,
+  findSubCategory,
 } from '@/lib/business-categories';
 import {
   Calculator,
@@ -233,6 +235,7 @@ const PHYSICAL_PRESETS = [
   {
     id: 'candle', emoji: '🕯️',
     industry: 'Candles & Wax Melts',
+    categoryId: 'candles-fragrance',
     name: 'Handcrafted 200g Vanilla Soy Candle',
     hsnCode: '3406',
     outputGSTRatePercent: 12,
@@ -254,6 +257,7 @@ const PHYSICAL_PRESETS = [
   {
     id: 'soap', emoji: '🧼',
     industry: 'Cold Process Soaps',
+    categoryId: 'candles-fragrance',
     name: 'Cold Process Honey & Goat Milk Soap Bar',
     hsnCode: '3401',
     outputGSTRatePercent: 5,
@@ -283,6 +287,7 @@ const PHYSICAL_PRESETS = [
     id: 'bakery',
     emoji: '🧁',
     industry: 'Bakery & Confectionery',
+    categoryId: 'food-bakery',
     name: 'Artisan Belgian Chocolate Brownie Batch',
     hsnCode: '1905',
     outputGSTRatePercent: 5,
@@ -312,6 +317,7 @@ const PHYSICAL_PRESETS = [
     id: 'cosmetics',
     emoji: '🧴',
     industry: 'Cosmetics & Skincare',
+    categoryId: 'beauty-personal-care',
     name: 'Vitamin C Brightening Face Serum (30ml)',
     hsnCode: '3304',
     outputGSTRatePercent: 18,
@@ -339,6 +345,7 @@ const PHYSICAL_PRESETS = [
   {
     id: 'resin', emoji: '🌊',
     industry: 'Resin & Molded Art',
+    categoryId: 'handmade-crafts',
     name: 'Ocean Wave Epoxy Resin Coasters (Set of 4)',
     hsnCode: '3926',
     outputGSTRatePercent: 18,
@@ -367,6 +374,7 @@ const PHYSICAL_PRESETS = [
     id: 'jewellery',
     emoji: '💍',
     industry: 'Handmade Jewellery',
+    categoryId: 'jewellery',
     name: 'Polymer Clay Floral Dangle Earrings',
     hsnCode: '7117',
     outputGSTRatePercent: 3,
@@ -394,6 +402,7 @@ const PHYSICAL_PRESETS = [
     id: 'apparel',
     emoji: '🧵',
     industry: 'Textiles & Apparel',
+    categoryId: 'clothing-accessories',
     name: 'Hand-Block Printed Cotton Tote Bag',
     hsnCode: '6204',
     outputGSTRatePercent: 12,
@@ -422,6 +431,7 @@ const PHYSICAL_PRESETS = [
     id: 'food',
     emoji: '🍫',
     industry: 'Packaged Food & Snacks',
+    categoryId: 'food-bakery',
     name: 'Roasted Peri Peri Makhana Snack Pouch (100g)',
     hsnCode: '1904',
     outputGSTRatePercent: 12,
@@ -449,6 +459,7 @@ const PHYSICAL_PRESETS = [
     id: 'jesmonite',
     emoji: '🪴',
     industry: 'Jesmonite & Plaster',
+    categoryId: 'home-decor-lifestyle',
     name: 'Fluted Jesmonite Succulent Planter',
     hsnCode: '6815',
     outputGSTRatePercent: 18,
@@ -476,6 +487,7 @@ const PHYSICAL_PRESETS = [
     id: 'woodcraft',
     emoji: '🪵',
     industry: 'Woodcraft & Decor',
+    categoryId: 'handmade-crafts',
     name: 'Custom Laser-Engraved Wooden Nameplate',
     hsnCode: '4421',
     outputGSTRatePercent: 12,
@@ -544,8 +556,11 @@ function CalculatorContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const productParam = searchParams.get('product');
+  const subCategoryParam = searchParams.get('subCategory') || searchParams.get('preset');
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('candles-fragrance');
+  const [activeSubCategoryId, setActiveSubCategoryId] = useState<string>('');
+  const [presetCategoryFilter, setPresetCategoryFilter] = useState<string>('all');
   const [productType, setProductType] = useState<'physical' | 'digital' | 'service'>('physical');
   const [activePhysicalPresetId, setActivePhysicalPresetId] = useState<string>('candle');
   const [activeDigitalPresetId, setActiveDigitalPresetId] = useState<string>('');
@@ -618,6 +633,35 @@ function CalculatorContent() {
       queueMicrotask(() => loadCategoryTemplate('blank'));
       return;
     }
+    if (subCategoryParam) {
+      const physicalPreset = PHYSICAL_PRESETS.find((p) => p.id === subCategoryParam);
+      if (physicalPreset) {
+        queueMicrotask(() => {
+          setActiveCategoryId(physicalPreset.categoryId || 'candles-fragrance');
+          setActiveSubCategoryId(physicalPreset.id);
+          loadPhysicalPreset(physicalPreset);
+        });
+        return;
+      }
+      const digitalPreset = DIGITAL_PRESETS.find((p) => p.id === subCategoryParam);
+      if (digitalPreset) {
+        queueMicrotask(() => {
+          setActiveCategoryId('digital-products');
+          setActiveSubCategoryId(digitalPreset.id);
+          loadDigitalPreset(digitalPreset);
+        });
+        return;
+      }
+      const foundSub = findSubCategory(subCategoryParam);
+      if (foundSub) {
+        queueMicrotask(() => {
+          setActiveCategoryId(foundSub.parentCategoryId);
+          setActiveSubCategoryId(foundSub.id);
+          handleSubCategoryClick(foundSub, foundSub.parentCategory);
+        });
+        return;
+      }
+    }
     if (categoryParam) {
       queueMicrotask(() => loadCategoryTemplate(categoryParam, productParam || undefined));
       return;
@@ -652,6 +696,34 @@ function CalculatorContent() {
 
     resolveDefaultCategory();
   }, [categoryParam, productParam]);
+
+  function handleSubCategoryClick(sub: SubCategory, cat: BusinessCategory) {
+    setActiveSubCategoryId(sub.id);
+    setActiveCategoryId(cat.id);
+    if (sub.presetId) {
+      const physicalPreset = PHYSICAL_PRESETS.find((p) => p.id === sub.presetId);
+      if (physicalPreset && sub.productType === 'physical') {
+        loadPhysicalPreset(physicalPreset);
+        return;
+      }
+      const digitalPreset = DIGITAL_PRESETS.find((p) => p.id === sub.presetId);
+      if (digitalPreset && sub.productType === 'digital') {
+        loadDigitalPreset(digitalPreset);
+        return;
+      }
+    }
+
+    setProductType(sub.productType);
+    const updated: BatchInput = {
+      ...form,
+      productName: sub.starterProductName,
+      productType: sub.productType,
+      hsnCode: sub.hsnCode,
+      outputGSTRatePercent: sub.defaultRate,
+    };
+    setForm(updated);
+    recalc(updated, materials);
+  }
 
   function handleProductTypeSwitch(type: 'physical' | 'digital' | 'service') {
     setProductType(type);
@@ -986,6 +1058,7 @@ function CalculatorContent() {
     document.body.removeChild(link);
   }
 
+  const activeCategory = getBusinessCategory(activeCategoryId);
   const prices = result
     ? suggestPrices(
         result.totalDirectCostPerUnit,
@@ -1222,6 +1295,52 @@ function CalculatorContent() {
                 );
               })}
             </div>
+
+            {/* Sub-Categories for Selected Business Category */}
+            {activeCategoryId !== 'blank' && activeCategory && activeCategory.subCategories && activeCategory.subCategories.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      {activeCategory.name} — Main Sub-Categories:
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Select a sub-category to load its verified wholesale BOM, HSN & tax terms
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {activeCategory.subCategories.map((sub) => {
+                    const isSubActive =
+                      activeSubCategoryId === sub.id ||
+                      (form.hsnCode === sub.hsnCode && form.productName.toLowerCase().includes(sub.shortName.toLowerCase()));
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => handleSubCategoryClick(sub, activeCategory)}
+                        className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                          isSubActive
+                            ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-xs ring-2 ring-indigo-500/20'
+                            : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-base">{sub.icon}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                            HSN {sub.hsnCode}
+                          </span>
+                        </div>
+                        <div className="font-bold truncate text-[11px] text-slate-900">{sub.name}</div>
+                        <div className="text-[10px] truncate text-slate-500 mt-0.5">{sub.starterProductName}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <p className="text-[11px] text-slate-500 mt-2.5 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span>
@@ -1244,8 +1363,36 @@ function CalculatorContent() {
                   Pre-filled with verified wholesale BOM, HSN code, scrap rate & GST rates
                 </span>
               </div>
+              <div className="flex flex-wrap gap-1 mb-3 pb-3 border-b border-slate-200">
+                {[
+                  { id: 'all', label: 'All Presets (10)' },
+                  { id: 'candles-fragrance', label: '🏭 Handmade (2)' },
+                  { id: 'handmade-crafts', label: '🎨 Crafts (2)' },
+                  { id: 'home-decor-lifestyle', label: '🏠 Home & Living (1)' },
+                  { id: 'food-bakery', label: '🍱 Food (2)' },
+                  { id: 'beauty-personal-care', label: '🧴 Beauty (1)' },
+                  { id: 'clothing-accessories', label: '🧵 Apparel (1)' },
+                  { id: 'jewellery', label: '💍 Jewellery (1)' },
+                ].map((tab) => {
+                  const isTabActive = presetCategoryFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setPresetCategoryFilter(tab.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        isTabActive
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {PHYSICAL_PRESETS.map((p) => {
+                {PHYSICAL_PRESETS.filter((p) => presetCategoryFilter === 'all' || p.categoryId === presetCategoryFilter).map((p) => {
                   const isActive = activePhysicalPresetId === p.id && form.productName === p.name;
                   return (
                     <button

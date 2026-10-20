@@ -155,16 +155,27 @@ export default function HomePage() {
                   <p className="text-xs text-slate-500 leading-relaxed mb-4">
                     {cat.tagline}
                   </p>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {cat.exampleProducts.slice(0, 3).map((ex) => (
-                      <span
-                        key={ex}
-                        className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md"
-                      >
-                        {ex}
-                      </span>
-                    ))}
-                  </div>
+                  
+                  {/* Main Sub-Categories */}
+                  {cat.subCategories && cat.subCategories.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Main Sub-Categories:
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {cat.subCategories.map((sub) => (
+                          <span
+                            key={sub.id}
+                            className="inline-flex items-center gap-1.5 text-[11px] bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 text-slate-700 hover:text-indigo-700 px-2.5 py-1 rounded-lg font-medium transition-colors truncate"
+                            title={`${sub.name} — HSN ${sub.hsnCode} (${sub.defaultRate}% GST)`}
+                          >
+                            <span className="shrink-0">{sub.icon}</span>
+                            <span className="truncate">{sub.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-indigo-600 group-hover:text-indigo-700">

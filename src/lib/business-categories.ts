@@ -1,5 +1,19 @@
 import { BatchInput } from './calculator';
 
+export interface SubCategory {
+  id: string;
+  name: string;
+  shortName: string;
+  icon: string;
+  hsnCode: string;
+  defaultRate: number;
+  productType: 'physical' | 'digital' | 'service';
+  tagline: string;
+  starterProductName: string;
+  presetId?: string;
+  starterInput?: Partial<BatchInput>;
+}
+
 export interface BusinessCategory {
   id: string;
   name: string;
@@ -10,6 +24,7 @@ export interface BusinessCategory {
   description: string;
   defaultProductType: 'physical' | 'digital' | 'service';
   exampleProducts: string[];
+  subCategories: SubCategory[];
   starterInput: BatchInput;
 }
 
@@ -31,7 +46,55 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Batch costing engine for any handmade physical product — calibrated for raw material loss, wastage, labour, and packaging across all craft categories.',
     defaultProductType: 'physical',
-    exampleProducts: ['Soy Jar Candle', 'Cold-Process Soap', 'Resin Coaster Set', 'Wax Melts'],
+    exampleProducts: ['Candles & Wax Melts', 'Cold-Process Soaps', 'Wax Tablets', 'Reed Diffusers'],
+    subCategories: [
+      {
+        id: 'candle',
+        name: 'Candles & Wax Melts',
+        shortName: 'Candles',
+        icon: '🕯️',
+        hsnCode: '3406',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Handcrafted soy, beeswax, paraffin candles, tea lights & scented wax melts',
+        starterProductName: 'Handcrafted 200g Vanilla Soy Candle',
+        presetId: 'candle',
+      },
+      {
+        id: 'soap',
+        name: 'Cold Process Soaps',
+        shortName: 'Soaps',
+        icon: '🧼',
+        hsnCode: '3401',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Artisan cold process, melt & pour, honey, goat milk & botanical soap bars',
+        starterProductName: 'Cold Process Honey & Goat Milk Soap Bar',
+        presetId: 'soap',
+      },
+      {
+        id: 'wax-melts',
+        name: 'Wax Melts & Scent Tablets',
+        shortName: 'Wax Melts',
+        icon: '🌸',
+        hsnCode: '3307',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Botanical wax tablets, wardrobe fresheners & aromatherapy wax melts',
+        starterProductName: 'Botanical Scented Soy Wax Melts (Pack of 6)',
+      },
+      {
+        id: 'diffusers',
+        name: 'Reed Diffusers & Room Mists',
+        shortName: 'Diffusers',
+        icon: '🌿',
+        hsnCode: '3307',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Essential oil reed diffusers, room sprays & linen mists',
+        starterProductName: 'Amber Glass Essential Oil Reed Diffuser (100ml)',
+      },
+    ],
     starterInput: {
       productName: 'Soy Fragrance Candle 200g',
       productType: 'physical',
@@ -75,7 +138,55 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Designed for makers balancing high labour hours, variable resin/clay mixtures, mold depreciation, and custom artisan finishes.',
     defaultProductType: 'physical',
-    exampleProducts: ['Epoxy Resin Coasters', 'Macrame Wall Hanging', 'Jesmonite Tray', 'Concrete Decor'],
+    exampleProducts: ['Resin & Molded Art', 'Woodcraft & Decor', 'Macrame & Fiber Art', 'Studio Ceramics'],
+    subCategories: [
+      {
+        id: 'resin',
+        name: 'Resin & Molded Art',
+        shortName: 'Resin Art',
+        icon: '🌊',
+        hsnCode: '3926',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Epoxy resin coasters, geode wall art, bookmarks, trays & preservation pieces',
+        starterProductName: 'Ocean Wave Epoxy Resin Coasters (Set of 4)',
+        presetId: 'resin',
+      },
+      {
+        id: 'woodcraft',
+        name: 'Woodcraft & Decor',
+        shortName: 'Woodcraft',
+        icon: '🪵',
+        hsnCode: '4421',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Laser-cut wood, engraved signs, handcrafted chopping boards & wooden decor',
+        starterProductName: 'Custom Laser-Engraved Wooden Nameplate',
+        presetId: 'woodcraft',
+      },
+      {
+        id: 'macrame',
+        name: 'Macrame & Fiber Art',
+        shortName: 'Macrame',
+        icon: '🧶',
+        hsnCode: '5609',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Bohemian braided cotton wall hangings, plant hangers & woven decor',
+        starterProductName: 'Boho Braided Cotton Cord Wall Hanging',
+      },
+      {
+        id: 'pottery',
+        name: 'Ceramics & Studio Pottery',
+        shortName: 'Pottery',
+        icon: '🏺',
+        hsnCode: '6912',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Wheel-thrown ceramic cups, stoneware planters, vases & glazed pottery',
+        starterProductName: 'Hand-Thrown Stoneware Ceramic Coffee Mug',
+      },
+    ],
     starterInput: {
       productName: 'Handcrafted Resin & Wood Coaster Set',
       productType: 'physical',
@@ -118,7 +229,54 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Batch costing engine for home decor and lifestyle products — accounts for mineral composite weight loss, sealer costs, mold depreciation, and lifestyle retail packaging.',
     defaultProductType: 'physical',
-    exampleProducts: ['Jesmonite Tray', 'Concrete Candle Holder', 'Terrazzo Coasters', 'Ceramic Planter'],
+    exampleProducts: ['Jesmonite & Plaster', 'Mineral Trays & Coasters', 'Soft Furnishings', 'Artisan Tableware'],
+    subCategories: [
+      {
+        id: 'jesmonite',
+        name: 'Jesmonite & Plaster',
+        shortName: 'Jesmonite',
+        icon: '🪴',
+        hsnCode: '6815',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Mineral composite planters, trays, terrazzo coasters & architectural decor',
+        starterProductName: 'Fluted Jesmonite Succulent Planter',
+        presetId: 'jesmonite',
+      },
+      {
+        id: 'concrete-trays',
+        name: 'Concrete & Mineral Trays',
+        shortName: 'Mineral Trays',
+        icon: '🧱',
+        hsnCode: '6815',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Jesmonite AC100 oval trays, concrete vanity dishes & terrazzo decor',
+        starterProductName: 'Jesmonite Mineral Composite Oval Tray',
+      },
+      {
+        id: 'furnishings',
+        name: 'Soft Furnishings & Cushions',
+        shortName: 'Furnishings',
+        icon: '🛋️',
+        hsnCode: '6304',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Textured cotton cushion covers, throws, table runners & linen mats',
+        starterProductName: 'Handloom Textured Cotton Cushion Cover (16x16")',
+      },
+      {
+        id: 'tableware',
+        name: 'Artisan Tableware & Boards',
+        shortName: 'Tableware',
+        icon: '🍽️',
+        hsnCode: '4419',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Acacia and neem wood platters, charcuterie boards & coaster sets',
+        starterProductName: 'Acacia Wood Serving Platter & Coaster Set',
+      },
+    ],
     starterInput: {
       productName: 'Jesmonite Mineral Composite Oval Tray',
       productType: 'physical',
@@ -161,7 +319,55 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Batch costing engine accounting for baking weight loss (evaporation), premium raw ingredients, food-grade pouch packaging, and cold-chain/fast delivery.',
     defaultProductType: 'physical',
-    exampleProducts: ['Artisan Sourdough Loaf', 'Belgian Chocolate Brownies', 'Gourmet Roasted Makhana', 'Granola Breakfast Pouch'],
+    exampleProducts: ['Bakery & Confectionery', 'Packaged Food & Snacks', 'Artisan Sourdough', 'Granola & Cereals'],
+    subCategories: [
+      {
+        id: 'bakery',
+        name: 'Bakery & Confectionery',
+        shortName: 'Bakery',
+        icon: '🧁',
+        hsnCode: '1905',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Artisan brownies, cookies, sourdough loaves, teacakes & pastries',
+        starterProductName: 'Artisan Belgian Chocolate Brownie Batch',
+        presetId: 'bakery',
+      },
+      {
+        id: 'food',
+        name: 'Packaged Food & Snacks',
+        shortName: 'Snacks',
+        icon: '🍫',
+        hsnCode: '1904',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Roasted makhana, trail mixes, gourmet dry fruits & extruded snacks',
+        starterProductName: 'Roasted Peri Peri Makhana Snack Pouch (100g)',
+        presetId: 'food',
+      },
+      {
+        id: 'sourdough',
+        name: 'Artisan Sourdough & Breads',
+        shortName: 'Sourdough',
+        icon: '🍞',
+        hsnCode: '1905',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Wild yeast sourdough boules, focaccia, baguettes & rye loaves',
+        starterProductName: 'Fermented Artisan Sourdough Boule (650g)',
+      },
+      {
+        id: 'granola',
+        name: 'Gourmet Granola & Cereals',
+        shortName: 'Granola',
+        icon: '🥣',
+        hsnCode: '1904',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Slow-baked rolled oats, toasted nut granolas, muesli & seed mixes',
+        starterProductName: 'Roasted Almond Cranberry Granola Pouch (300g)',
+      },
+    ],
     starterInput: {
       productName: 'Belgian Couverture Chocolate Brownies (Box of 6)',
       productType: 'physical',
@@ -206,7 +412,55 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Formulation-accurate costing for active botanical extracts, essential oils, carrier bases, dropper bottles, and laboratory compliance.',
     defaultProductType: 'physical',
-    exampleProducts: ['Cold Process Shea Butter Soap', 'Vitamin C Brightening Serum', 'Whipped Body Butter (100g)', 'Natural Tinted Lip Balm'],
+    exampleProducts: ['Cosmetics & Skincare', 'Bath & Body Bars', 'Body Butters & Balms', 'Herbal Hair Oils'],
+    subCategories: [
+      {
+        id: 'cosmetics',
+        name: 'Cosmetics & Skincare',
+        shortName: 'Skincare',
+        icon: '🧴',
+        hsnCode: '3304',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Active face serums, hyaluronic hydrators, toners, moisturisers & clay masks',
+        starterProductName: 'Vitamin C Brightening Face Serum (30ml)',
+        presetId: 'cosmetics',
+      },
+      {
+        id: 'soap-bars',
+        name: 'Cold Process Soaps & Body Bars',
+        shortName: 'Bath Bars',
+        icon: '🧼',
+        hsnCode: '3401',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Pure cold-process shea butter, goat milk, charcoal & botanical cleansing bars',
+        starterProductName: 'Cold Process Shea Butter & Honey Soap Bar',
+        presetId: 'soap',
+      },
+      {
+        id: 'body-butter',
+        name: 'Body Butters & Balms',
+        shortName: 'Body Butters',
+        icon: '🧈',
+        hsnCode: '3304',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Whipped raw mango butter, cocoa salves, foot creams & barrier balms',
+        starterProductName: 'Whipped Raw Shea & Cocoa Body Butter (150g)',
+      },
+      {
+        id: 'hair-oils',
+        name: 'Herbal Hair Oils & Tonics',
+        shortName: 'Haircare',
+        icon: '💆',
+        hsnCode: '3305',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Infused rosemary hair oils, scalp serums, bhringraj extracts & hair mists',
+        starterProductName: 'Cold-Pressed Rosemary & Bhringraj Hair Oil (100ml)',
+      },
+    ],
     starterInput: {
       productName: 'Cold Process Shea Butter & Honey Soap Bar',
       productType: 'physical',
@@ -250,7 +504,54 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Fabric yardage calculations, pattern cutting waste, thread/zippers consumables, tailor labour rates, and garment polybag packaging.',
     defaultProductType: 'physical',
-    exampleProducts: ['Block-Printed Cotton Tote Bag', 'Silk Hair Scrunchie Set', 'Hand-Embroidered Linen Shirt', 'Canvas Everyday Apron'],
+    exampleProducts: ['Textiles & Apparel', 'Scrunchies & Accessories', 'Scarves & Stoles', 'Embroidered Wear'],
+    subCategories: [
+      {
+        id: 'apparel',
+        name: 'Textiles & Apparel',
+        shortName: 'Apparel',
+        icon: '🧵',
+        hsnCode: '6204',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Hand-block printed cotton tote bags, aprons, linen shirts & artisan garments',
+        starterProductName: 'Hand-Block Printed Cotton Tote Bag',
+        presetId: 'apparel',
+      },
+      {
+        id: 'scrunchies',
+        name: 'Scrunchies & Hair Accessories',
+        shortName: 'Scrunchies',
+        icon: '🎀',
+        hsnCode: '6217',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Mulberry silk scrunchies, oversized linen hair ties & satin hair bows',
+        starterProductName: 'Mulberry Silk Hair Scrunchie Bundle (Set of 3)',
+      },
+      {
+        id: 'scarves',
+        name: 'Scarves & Stoles',
+        shortName: 'Scarves',
+        icon: '🧣',
+        hsnCode: '6214',
+        defaultRate: 12,
+        productType: 'physical',
+        tagline: 'Chanderi silk stoles, modal block-print dupattas & woollen shawls',
+        starterProductName: 'Handwoven Indigo Cotton Chanderi Scarf',
+      },
+      {
+        id: 'embroidered',
+        name: 'Embroidered Wear & Linen',
+        shortName: 'Embroidered',
+        icon: '🪡',
+        hsnCode: '6109',
+        defaultRate: 5,
+        productType: 'physical',
+        tagline: 'Minimalist hand-embroidered organic cotton t-shirts, caps & tote bags',
+        starterProductName: 'Minimalist Embroidered Organic Cotton T-Shirt',
+      },
+    ],
     starterInput: {
       productName: 'Block-Printed Organic Cotton Tote Bag',
       productType: 'physical',
@@ -293,7 +594,54 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Micro-component costing for findings, ear hooks, jump rings, specialized glazes, and anti-tarnish premium jewellery gift boxes.',
     defaultProductType: 'physical',
-    exampleProducts: ['Polymer Clay Statement Earrings', 'Natural Pearl Beaded Choker', 'Wire-Wrapped Crystal Ring', 'Brass Pendant Necklace'],
+    exampleProducts: ['Handmade Jewellery', 'Polymer Clay Earrings', 'Pearl & Beaded Chokers', 'Wire-Wrapped Rings'],
+    subCategories: [
+      {
+        id: 'jewellery',
+        name: 'Handmade Jewellery',
+        shortName: 'Polymer Clay',
+        icon: '💍',
+        hsnCode: '7117',
+        defaultRate: 3,
+        productType: 'physical',
+        tagline: 'Polymer clay statement earrings, floral studs & geometric dangles',
+        starterProductName: 'Polymer Clay Floral Dangle Earrings',
+        presetId: 'jewellery',
+      },
+      {
+        id: 'beaded',
+        name: 'Pearl & Beaded Chokers',
+        shortName: 'Beaded',
+        icon: '📿',
+        hsnCode: '7117',
+        defaultRate: 3,
+        productType: 'physical',
+        tagline: 'Freshwater pearl necklaces, glass seed bead chokers & bohemian bracelets',
+        starterProductName: 'Freshwater Pearl & Seed Bead Layered Choker',
+      },
+      {
+        id: 'wire-rings',
+        name: 'Wire-Wrapped Crystal Rings',
+        shortName: 'Wire-Wrapped',
+        icon: '🪙',
+        hsnCode: '7117',
+        defaultRate: 3,
+        productType: 'physical',
+        tagline: 'Raw gemstone crystal rings, anti-tarnish wire cuffs & wire pendants',
+        starterProductName: 'Non-Tarnish Raw Quartz Crystal Wire-Wrapped Ring',
+      },
+      {
+        id: 'resin-charms',
+        name: 'Botanical Resin Pendants',
+        shortName: 'Resin Charms',
+        icon: '💎',
+        hsnCode: '7117',
+        defaultRate: 3,
+        productType: 'physical',
+        tagline: 'Real pressed flower resin pendants, gold bezels & personalized lockets',
+        starterProductName: 'Real Daisy Flower Botanical Resin Pendant Necklace',
+      },
+    ],
     starterInput: {
       productName: 'Sculpted Polymer Clay Dangle Earrings',
       productType: 'physical',
@@ -337,7 +685,81 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'Zero shipping, zero packaging, zero batch scrap. Solves platform commissions (Gumroad, Instamojo), creator tools, and 18% GST (SAC 9984).',
     defaultProductType: 'digital',
-    exampleProducts: ['Notion Small Business OS', 'Canva Social Media Brand Kit', '3D Printing STL Model Pack', 'Procreate Brush & Texture Kit'],
+    exampleProducts: ['Notion & Workspace OS', '3D Printable STL Models', 'Lightroom Presets', 'Canva Creator Kits'],
+    subCategories: [
+      {
+        id: 'notion',
+        name: 'Notion & Workspace Templates',
+        shortName: 'Notion OS',
+        icon: '📝',
+        hsnCode: '9984',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: 'All-in-one Notion workspace OS, project dashboards, habit trackers & CRM kits',
+        starterProductName: 'Notion Life & Business OS Template',
+        presetId: 'notion',
+      },
+      {
+        id: 'stl3d',
+        name: '3D STL & Printable Models',
+        shortName: '3D STL',
+        icon: '🧊',
+        hsnCode: '9983',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: 'Pre-supported 3D miniature STLs, tabletop gaming assets & functional model bundles',
+        starterProductName: '3D Printable STL Model & Miniature Bundle',
+        presetId: 'stl3d',
+      },
+      {
+        id: 'lightroom',
+        name: 'Lightroom Presets & Color LUTs',
+        shortName: 'Photo Presets',
+        icon: '📸',
+        hsnCode: '9984',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: 'Cinematic desktop & mobile Lightroom DNG/XMP presets, video LUTs & editing curves',
+        starterProductName: 'Cinematic Lightroom Presets Pack (Mobile & Desktop)',
+        presetId: 'lightroom',
+      },
+      {
+        id: 'canva',
+        name: 'Canva Social & Brand Kits',
+        shortName: 'Canva Kits',
+        icon: '🎨',
+        hsnCode: '9984',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: '150+ viral social media templates, carousel sets, client onboarding decks & kits',
+        starterProductName: 'Canva Social Media Kit (150+ Viral Templates)',
+        presetId: 'canva',
+      },
+      {
+        id: 'course',
+        name: 'Self-Paced Courses & Masterclasses',
+        shortName: 'Video Courses',
+        icon: '🎥',
+        hsnCode: '9984',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: 'Pre-recorded structured video masterclasses, downloadable worksheets & resources',
+        starterProductName: 'Self-Paced Video Course & Masterclass',
+        presetId: 'course',
+      },
+      {
+        id: 'audio',
+        name: 'Audio Sample Packs & Beats',
+        shortName: 'Audio Packs',
+        icon: '🎧',
+        hsnCode: '9984',
+        defaultRate: 18,
+        productType: 'digital',
+        tagline: 'Royalty-free WAV stems, MIDI chord progressions, synth presets & drum loops',
+        starterProductName: 'Lo-Fi Beats & Audio Sample Pack (WAV/MIDI)',
+        presetId: 'audio',
+      },
+    ],
     starterInput: {
       productName: 'All-In-One Small Business Notion OS',
       productType: 'digital',
@@ -378,7 +800,53 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     description:
       'A flexible, neutral template allowing you to enter custom materials, quantities, direct craft labour, consumables, overhead, and tax terms.',
     defaultProductType: 'physical',
-    exampleProducts: ['Custom Manufacturing', '3D-Printed Parts', 'Stationery & Printing', 'Specialized Decor'],
+    exampleProducts: ['Custom Manufacturing', '3D-Printed Parts', 'Curated Gift Hampers', 'Studio Workshops'],
+    subCategories: [
+      {
+        id: 'custom-batch',
+        name: 'Custom Batch Manufacturing',
+        shortName: 'Custom Batch',
+        icon: '⚙️',
+        hsnCode: '9999',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Bespoke physical products, custom chemical or material mixtures & specialized runs',
+        starterProductName: 'Custom Batch Product Recipe',
+      },
+      {
+        id: 'custom-3d',
+        name: '3D Printing & Prototyping',
+        shortName: '3D Prototyping',
+        icon: '🖨️',
+        hsnCode: '8477',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'FDM/SLA rapid prototyping, custom functional parts & on-demand batch runs',
+        starterProductName: 'Precision 3D-Printed Engineering Prototype Run',
+      },
+      {
+        id: 'custom-hampers',
+        name: 'Curated Gift Hampers & Boxes',
+        shortName: 'Gift Hampers',
+        icon: '🎁',
+        hsnCode: '9999',
+        defaultRate: 18,
+        productType: 'physical',
+        tagline: 'Hand-assembled festive gift boxes, corporate hampers & luxury artisan kits',
+        starterProductName: 'Artisan Gourmet & Candle Festive Gift Hamper',
+      },
+      {
+        id: 'custom-workshops',
+        name: 'Creative Studio Workshops',
+        shortName: 'Workshops',
+        icon: '🛠️',
+        hsnCode: '9992',
+        defaultRate: 18,
+        productType: 'service',
+        tagline: 'In-person craft masterclasses, soap-making or painting workshop seats',
+        starterProductName: 'Weekend Studio Craft Workshop (1 Seat)',
+      },
+    ],
     starterInput: {
       productName: 'Custom Batch Product Recipe',
       productType: 'physical',
@@ -414,7 +882,7 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
 ];
 
 /**
- * Retrieves a category by ID or loose name, defaulting to Candles & Fragrance if unmatched
+ * Retrieves a category by ID or loose name, defaulting to Handmade Physical Products if unmatched
  */
 export function getBusinessCategory(idOrName?: string | null): BusinessCategory {
   if (!idOrName) return BUSINESS_CATEGORIES[0];
@@ -430,15 +898,23 @@ export function getBusinessCategory(idOrName?: string | null): BusinessCategory 
   );
   if (byName) return byName;
 
+  // Sub-category match
+  for (const cat of BUSINESS_CATEGORIES) {
+    const sub = cat.subCategories.find(
+      (s) => s.id === query || s.name.toLowerCase() === query || s.shortName.toLowerCase() === query
+    );
+    if (sub) return cat;
+  }
+
   // Partial match
-  if (query.includes('candle') || query.includes('wax')) return BUSINESS_CATEGORIES[0];
+  if (query.includes('candle') || query.includes('wax') || query.includes('physical')) return BUSINESS_CATEGORIES[0];
   if (query.includes('craft') || query.includes('handmade') || query.includes('resin')) return BUSINESS_CATEGORIES[1];
-  if (query.includes('decor') || query.includes('home') || query.includes('ceramic') || query.includes('jesmonite')) return BUSINESS_CATEGORIES[2];
-  if (query.includes('bake') || query.includes('food') || query.includes('choc') || query.includes('snack')) return BUSINESS_CATEGORIES[3];
-  if (query.includes('beauty') || query.includes('soap') || query.includes('cosmetic') || query.includes('skin')) return BUSINESS_CATEGORIES[4];
-  if (query.includes('cloth') || query.includes('apparel') || query.includes('textile') || query.includes('tote')) return BUSINESS_CATEGORIES[5];
+  if (query.includes('decor') || query.includes('home') || query.includes('living') || query.includes('jesmonite')) return BUSINESS_CATEGORIES[2];
+  if (query.includes('bake') || query.includes('food') || query.includes('snack') || query.includes('packaged')) return BUSINESS_CATEGORIES[3];
+  if (query.includes('beauty') || query.includes('soap') || query.includes('wellness') || query.includes('skin')) return BUSINESS_CATEGORIES[4];
+  if (query.includes('cloth') || query.includes('apparel') || query.includes('fashion') || query.includes('textile')) return BUSINESS_CATEGORIES[5];
   if (query.includes('jewel')) return BUSINESS_CATEGORIES[6];
-  if (query.includes('digital') || query.includes('tech') || query.includes('template')) return BUSINESS_CATEGORIES[7];
+  if (query.includes('digital') || query.includes('online') || query.includes('template')) return BUSINESS_CATEGORIES[7];
   if (query.includes('custom') || query.includes('other')) return BUSINESS_CATEGORIES[8];
 
   return BUSINESS_CATEGORIES[0];
@@ -457,4 +933,38 @@ export function getCategoryDisplayName(
   }
   const category = getBusinessCategory(categoryId);
   return category.name;
+}
+
+/**
+ * Retrieves a flat list of all sub-categories annotated with their parent category details
+ */
+export function getAllSubCategories(): (SubCategory & { parentCategoryId: string; parentCategoryName: string })[] {
+  const result: (SubCategory & { parentCategoryId: string; parentCategoryName: string })[] = [];
+  for (const cat of BUSINESS_CATEGORIES) {
+    for (const sub of cat.subCategories) {
+      result.push({
+        ...sub,
+        parentCategoryId: cat.id,
+        parentCategoryName: cat.name,
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * Find a specific subcategory by its ID across all categories
+ */
+export function findSubCategory(subId: string): (SubCategory & { parentCategoryId: string; parentCategory: BusinessCategory }) | undefined {
+  for (const cat of BUSINESS_CATEGORIES) {
+    const sub = cat.subCategories.find((s) => s.id === subId);
+    if (sub) {
+      return {
+        ...sub,
+        parentCategoryId: cat.id,
+        parentCategory: cat,
+      };
+    }
+  }
+  return undefined;
 }
