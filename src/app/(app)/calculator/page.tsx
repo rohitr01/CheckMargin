@@ -560,7 +560,6 @@ function CalculatorContent() {
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('candles-fragrance');
   const [activeSubCategoryId, setActiveSubCategoryId] = useState<string>('');
-  const [presetCategoryFilter, setPresetCategoryFilter] = useState<string>('all');
   const [productType, setProductType] = useState<'physical' | 'digital' | 'service'>('physical');
   const [activePhysicalPresetId, setActivePhysicalPresetId] = useState<string>('candle');
   const [activeDigitalPresetId, setActiveDigitalPresetId] = useState<string>('');
@@ -1348,83 +1347,6 @@ function CalculatorContent() {
               </span>
             </p>
           </div>
-
-          {/* Physical Industry Presets Bar */}
-          {productType === 'physical' && (
-            <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                    Quick-Load Industry Recipe Presets:
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-500 font-semibold">
-                  Pre-filled with verified wholesale BOM, HSN code, scrap rate & GST rates
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1 mb-3 pb-3 border-b border-slate-200">
-                {[
-                  { id: 'all', label: 'All Presets (10)' },
-                  { id: 'candles-fragrance', label: '🏭 Handmade (2)' },
-                  { id: 'handmade-crafts', label: '🎨 Crafts (2)' },
-                  { id: 'home-decor-lifestyle', label: '🏠 Home & Living (1)' },
-                  { id: 'food-bakery', label: '🍱 Food (2)' },
-                  { id: 'beauty-personal-care', label: '🧴 Beauty (1)' },
-                  { id: 'clothing-accessories', label: '🧵 Apparel (1)' },
-                  { id: 'jewellery', label: '💍 Jewellery (1)' },
-                ].map((tab) => {
-                  const isTabActive = presetCategoryFilter === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setPresetCategoryFilter(tab.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                        isTabActive
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {PHYSICAL_PRESETS.filter((p) => presetCategoryFilter === 'all' || p.categoryId === presetCategoryFilter).map((p) => {
-                  const isActive = activePhysicalPresetId === p.id && form.productName === p.name;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => loadPhysicalPreset(p)}
-                      className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20'
-                          : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-base">{p.emoji}</span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          HSN {p.hsnCode}
-                        </span>
-                      </div>
-                      <div className={`font-bold truncate text-[11px] ${isActive ? 'text-white' : 'text-slate-900'}`}>
-                        {p.industry}
-                      </div>
-                      <div className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-indigo-200' : 'text-slate-500'}`}>
-                        {p.name.split('(')[0].trim()}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Digital Presets Bar */}
           {productType === 'digital' && (
