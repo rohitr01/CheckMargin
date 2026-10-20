@@ -33,12 +33,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
-            <Link href="/#how-it-works" className="hover:text-indigo-600 transition-colors">
-              How It Works
-            </Link>
-            <Link href="/features" className="hover:text-indigo-600 transition-colors">
-              Features
-            </Link>
             <Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">
               GST & HSN Guide
             </Link>
@@ -104,11 +98,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <div>
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Product</h4>
               <ul className="space-y-2.5 text-sm text-slate-600 font-medium">
+                <li><Link href="/#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</Link></li>
+                <li><Link href="/features" className="hover:text-indigo-600 transition-colors">Features & Capabilities</Link></li>
                 <li><Link href="/calculator" className="hover:text-indigo-600 transition-colors">Live Batch Calculator</Link></li>
                 <li><Link href="/marketing-guide" className="hover:text-indigo-600 transition-colors">Marketing & Ads Playbook</Link></li>
                 <li><Link href="/gst-guide" className="hover:text-indigo-600 transition-colors">GST & HSN Guide</Link></li>
                 <li><Link href="/compare" className="hover:text-indigo-600 transition-colors">Compare Couriers & Platforms</Link></li>
-                <li><Link href="/features" className="hover:text-indigo-600 transition-colors">Features & Capabilities</Link></li>
                 <li><Link href="/pricing" className="hover:text-indigo-600 transition-colors">Pricing & Plans</Link></li>
                 <li><Link href="/dashboard" className="hover:text-indigo-600 transition-colors">Studio Workspace</Link></li>
               </ul>
@@ -128,9 +123,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
             <p>© 2026 CheckMargin Inc. All rights reserved. Calculations are advisory and not tax or accounting advice.</p>
-            <div className="flex gap-6 text-slate-500">
-              <Link href="/pricing" className="hover:text-indigo-600">Pricing</Link>
+            <div className="flex flex-wrap gap-6 text-slate-500">
+              <Link href="/#how-it-works" className="hover:text-indigo-600">How It Works</Link>
               <Link href="/features" className="hover:text-indigo-600">Features</Link>
+              <Link href="/pricing" className="hover:text-indigo-600">Pricing</Link>
               <Link href="/auth/signup" className="hover:text-indigo-600">Create Account</Link>
             </div>
           </div>
