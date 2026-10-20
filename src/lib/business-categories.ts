@@ -23,15 +23,15 @@ export interface CustomCategoryDetails {
 export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   {
     id: 'candles-fragrance',
-    name: 'Candles & Fragrance',
-    shortName: 'Candles',
-    icon: '🕯️',
+    name: 'Handmade Physical Products',
+    shortName: 'Handmade',
+    icon: '🏭',
     badge: 'Popular',
-    tagline: 'Scented jar candles, wax melts, pillar candles & aroma diffusers',
+    tagline: 'Candles, soaps, wax melts, fragrance, resin art & all handcrafted physical goods',
     description:
-      'Batch costing engine calibrated for wax melting loss, fragrance oil percentages, wick sizing, curing times, and glass jar packaging.',
+      'Batch costing engine for any handmade physical product — calibrated for raw material loss, wastage, labour, and packaging across all craft categories.',
     defaultProductType: 'physical',
-    exampleProducts: ['Soy Jar Candle (200g)', 'Beeswax Pillar Candle', 'Aroma Wax Melts (Pack of 6)', 'Reed Diffuser Set'],
+    exampleProducts: ['Soy Jar Candle', 'Cold-Process Soap', 'Resin Coaster Set', 'Wax Melts'],
     starterInput: {
       productName: 'Soy Fragrance Candle 200g',
       productType: 'physical',
@@ -68,14 +68,14 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'handmade-crafts',
-    name: 'Handmade & Crafts',
-    shortName: 'Handmade',
+    name: 'Crafts & Home Decor',
+    shortName: 'Crafts',
     icon: '🎨',
-    tagline: 'Artisan craft, resin art, macrame, pottery & custom gifts',
+    tagline: 'Resin art, macrame, pottery, ceramics, Jesmonite, planters & artisan home goods',
     description:
-      'Designed for makers balancing high labour hours, variable resin/clay mixtures, molds depreciation, and custom artisan finishes.',
+      'Designed for makers balancing high labour hours, variable resin/clay mixtures, mold depreciation, and custom artisan finishes.',
     defaultProductType: 'physical',
-    exampleProducts: ['Epoxy Resin Coasters', 'Macrame Wall Hanging', 'Hand-Painted Plaster Art', 'Custom Wooden Coasters'],
+    exampleProducts: ['Epoxy Resin Coasters', 'Macrame Wall Hanging', 'Jesmonite Tray', 'Concrete Decor'],
     starterInput: {
       productName: 'Handcrafted Resin & Wood Coaster Set',
       productType: 'physical',
@@ -111,14 +111,14 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'home-decor-lifestyle',
-    name: 'Home Decor & Lifestyle',
-    shortName: 'Home Decor',
-    icon: '🏺',
-    tagline: 'Ceramics, Jesmonite trays, planters, stationery & living accents',
+    name: 'Home & Living Products',
+    shortName: 'Home & Living',
+    icon: '🏠',
+    tagline: 'Home decor, ceramics, stoneware, Jesmonite, concrete, minerals & lifestyle goods',
     description:
-      'Tailored for home decor producers who need accurate material ratio calculations, demolding scrap tracking, and heavy-fragile courier logistics.',
+      'Batch costing engine for home decor and lifestyle products — accounts for mineral composite weight loss, sealer costs, mold depreciation, and lifestyle retail packaging.',
     defaultProductType: 'physical',
-    exampleProducts: ['Jesmonite Oval Vanity Tray', 'Ceramic Tabletop Planter', 'Concrete Incense Holder', 'Architectural Bookends'],
+    exampleProducts: ['Jesmonite Tray', 'Concrete Candle Holder', 'Terrazzo Coasters', 'Ceramic Planter'],
     starterInput: {
       productName: 'Jesmonite Mineral Composite Oval Tray',
       productType: 'physical',
@@ -154,10 +154,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'food-bakery',
-    name: 'Food & Bakery',
-    shortName: 'Food & Bakery',
-    icon: '🧁',
-    tagline: 'Artisan bakeries, gourmet confectionery, snacks, granola & coffee',
+    name: 'Food & Packaged Goods',
+    shortName: 'Food',
+    icon: '🍱',
+    tagline: 'Bakeries, packaged snacks, confectionery, granola, tiffin & food-grade products',
     description:
       'Batch costing engine accounting for baking weight loss (evaporation), premium raw ingredients, food-grade pouch packaging, and cold-chain/fast delivery.',
     defaultProductType: 'physical',
@@ -199,10 +199,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'beauty-personal-care',
-    name: 'Beauty & Personal Care',
-    shortName: 'Beauty & Body',
+    name: 'Beauty & Wellness',
+    shortName: 'Beauty',
     icon: '🧴',
-    tagline: 'Cold-process soaps, face serums, body butters, lip balms & hair oils',
+    tagline: 'Skincare, haircare, body care, soaps, serums, lip balms & wellness products',
     description:
       'Formulation-accurate costing for active botanical extracts, essential oils, carrier bases, dropper bottles, and laboratory compliance.',
     defaultProductType: 'physical',
@@ -243,10 +243,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'clothing-accessories',
-    name: 'Clothing & Accessories',
+    name: 'Apparel & Fashion',
     shortName: 'Apparel',
     icon: '🧵',
-    tagline: 'Handmade apparel, scrunchies, tote bags, embroidered wear & scarves',
+    tagline: 'Clothing, accessories, fabric goods, bags, scarves & fashion items',
     description:
       'Fabric yardage calculations, pattern cutting waste, thread/zippers consumables, tailor labour rates, and garment polybag packaging.',
     defaultProductType: 'physical',
@@ -286,10 +286,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'jewellery',
-    name: 'Jewellery',
+    name: 'Jewellery & Accessories',
     shortName: 'Jewellery',
     icon: '💍',
-    tagline: 'Handmade earrings, polymer clay, beaded necklaces, wire wrap & resin charms',
+    tagline: 'Handmade jewellery, earrings, necklaces, bracelets, rings & accessories',
     description:
       'Micro-component costing for findings, ear hooks, jump rings, specialized glazes, and anti-tarnish premium jewellery gift boxes.',
     defaultProductType: 'physical',
@@ -330,10 +330,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'digital-products',
-    name: 'Digital Products',
+    name: 'Digital & Online Products',
     shortName: 'Digital',
     icon: '💻',
-    tagline: 'Notion templates, 3D printing STLs, design kits, digital guides & spreadsheets',
+    tagline: 'Digital downloads, templates, courses, e-books, design kits & online products',
     description:
       'Zero shipping, zero packaging, zero batch scrap. Solves platform commissions (Gumroad, Instamojo), creator tools, and 18% GST (SAC 9984).',
     defaultProductType: 'digital',
@@ -371,10 +371,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     id: 'custom',
-    name: 'Other Business / Custom Category',
-    shortName: 'Custom Business',
+    name: 'Custom / Other Business',
+    shortName: 'Custom',
     icon: '✨',
-    tagline: 'Any custom physical or digital product, service or specialized workshop',
+    tagline: 'Any product, service or business type not listed above',
     description:
       'A flexible, neutral template allowing you to enter custom materials, quantities, direct craft labour, consumables, overhead, and tax terms.',
     defaultProductType: 'physical',
